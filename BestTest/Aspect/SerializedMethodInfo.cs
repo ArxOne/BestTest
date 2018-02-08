@@ -6,6 +6,7 @@ namespace BestTest.Aspect
 {
     using System;
     using System.CodeDom;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using ArxOne.MrAdvice.Advice;
@@ -33,6 +34,7 @@ namespace BestTest.Aspect
         // ReSharper disable once UnassignedField.Global
         public IntroducedField<MethodDescriptor> Descriptor;
 
+        [DebuggerStepThrough]
         public void Advise(PropertyAdviceContext context)
         {
             if (context.IsSetter)
@@ -53,19 +55,19 @@ namespace BestTest.Aspect
                 var methodInfo = MethodInfo[context];
                 if (methodInfo != null)
                 {
-                    context.Value = methodInfo;
+                    context.ReturnValue = methodInfo;
                     return;
                 }
                 // now try to find it
-                var methodName = Descriptor[context];
+                var methodDescriptor = Descriptor[context];
                 // no name? No method
-                if (methodName?.MethodName == null)
+                if (methodDescriptor?.MethodName == null)
                 {
-                    context.Value = null;
+                    context.ReturnValue = null;
                     return;
                 }
 
-                methodInfo = GetMethod(methodName);
+                methodInfo = GetMethod(methodDescriptor);
                 MethodInfo[context] = methodInfo;
                 context.ReturnValue = methodInfo;
             }

@@ -5,12 +5,12 @@
 namespace BestTest.Test
 {
     using System;
-    using System.Collections.Specialized;
-    using System.Linq;
+    using System.Diagnostics;
     using System.Reflection;
     using Aspect;
 
     [Serializable]
+    [DebuggerDisplay("{" + nameof(DebugLiteral) + "}")]
     public class TestDescription
     {
         public string AssemblyPath { get; }
@@ -18,6 +18,9 @@ namespace BestTest.Test
         public string AssemblyName { get; }
 
         public string TypeName { get; }
+
+        private readonly string _methodName;
+        private string DebugLiteral => $"{TypeName}.{_methodName}";
 
         [SerializedMethodInfo] public MethodInfo TestMethod { get; private set; }
         [SerializedMethodInfo] public MethodInfo ClassInitialize { get; private set; }
@@ -29,7 +32,6 @@ namespace BestTest.Test
         public TestDescription()
         { }
 
-
         public TestDescription(string assemblyPath, MethodInfo testMethod, MethodInfo classInitialize, MethodInfo classCleanup, MethodInfo testInitialize, MethodInfo testCleanup)
         {
             AssemblyPath = assemblyPath;
@@ -40,38 +42,7 @@ namespace BestTest.Test
             TestCleanup = testCleanup;
             AssemblyName = testMethod.DeclaringType.Assembly.FullName;
             TypeName = testMethod.DeclaringType.FullName;
-        }
-
-        /// <summary>
-        /// Gets the method.
-        /// Since we may have crossed appdomains, it needs to be retrieved
-        /// </summary>
-        /// <param name="methodName">Name of the method.</param>
-        /// <returns></returns>
-        public MethodInfo GetMethod(string methodName)
-        {
-            // a public test method has 0 parameters, remember?
-            var method = GetType().GetMethod(methodName, new Type[0]);
-            return method;
-        }
-
-        private new Type GetType()
-        {
-            // first, get the assembly
-            var assembly = GetAssembly() ?? LoadAssembly();
-            // then ask for type
-            var type = assembly.GetType(TypeName);
-            return type;
-        }
-
-        private Assembly GetAssembly()
-        {
-            return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == AssemblyName);
-        }
-
-        private Assembly LoadAssembly()
-        {
-            return Assembly.LoadFrom(AssemblyPath);
+            _methodName = testMethod.Name;
         }
     }
 }

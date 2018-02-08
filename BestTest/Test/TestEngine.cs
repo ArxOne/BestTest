@@ -14,6 +14,8 @@ namespace BestTest.Test
 
     public class TestEngine : MarshalByRefObject
     {
+        private static readonly object[] NoParameter = new object[0];
+
         public int Run(TestParameters testParameters)
         {
             Test(testParameters);
@@ -91,15 +93,77 @@ namespace BestTest.Test
         [SeparateAppDomain]
         public void Test(TestParameters parameters)
         {
-            var d = EnumerateTests(parameters);
-            Test(d.Last());
-            Test(d.First());
+            var tests = EnumerateTests(parameters);
+            var instances = new Dictionary<Type, TestInstance>();
+            var assessments = new List<TestAssessment>();
+            foreach (var test in tests)
+                assessments.Add(Test(test, instances));
+            Cleanup(instances);
         }
 
-        [SeparateAppDomain]
-        public void Test(TestDescription testDescription)
+        private void Cleanup(IDictionary<Type, TestInstance> testInstances)
         {
-            var method = testDescription.TestMethod;
+            foreach (var testInstance in testInstances.Values)
+                Invoke(testInstance.Instance, testInstance.ClassCleanup, TestStep.ClassCleanup);
+        }
+
+        public TestAssessment Test(TestDescription testDescription, IDictionary<Type, TestInstance> testInstances)
+        {
+            var testClass = testDescription.TestMethod.DeclaringType;
+            if (!testInstances.TryGetValue(testClass, out var testInstance))
+            {
+                var instance = Activator.CreateInstance(testClass);
+                testInstance = new TestInstance { Instance = instance, ClassCleanup = testDescription.ClassCleanup };
+                testInstance.Assessment = Invoke(testInstance.Instance, testDescription.ClassInitialize, TestStep.ClassInitialize);
+                testInstances[testClass] = testInstance;
+            }
+
+            var testAssessment = testInstance.Assessment
+                                 ?? Invoke(testInstance.Instance, testDescription.TestInitialize, TestStep.TestInitialize)
+                                 ?? Invoke(testInstance.Instance, testDescription.TestMethod, TestStep.Test)
+                                 ?? Invoke(testInstance.Instance, testDescription.TestCleanup, TestStep.TestCleanup)
+                                 ?? TestAssessment.Success;
+
+            return testAssessment;
+        }
+
+        private static TestAssessment Invoke(object instance, MethodInfo method, TestStep step)
+        {
+            if (method == null)
+                return null;
+            try
+            {
+                method.Invoke(instance, NoParameter);
+                return null;
+            }
+            catch (TargetInvocationException e) when (e.InnerException.GetType().Name == "AssertInconclusiveException")
+            {
+                return new TestAssessment(step, TestResult.Inconclusive, e.InnerException);
+            }
+            catch (TargetInvocationException e) when (e.InnerException.GetType().Name == "AssertFailedException")
+            {
+                return new TestAssessment(step, TestResult.Failure, e.InnerException);
+            }
+            catch (TargetInvocationException e)
+            {
+                if (GetExpectedTypes(method).Any(expectedType => expectedType == e.InnerException.GetType()))
+                    return null;
+                return new TestAssessment(step, TestResult.Failure, e.InnerException);
+            }
+        }
+
+        private static IEnumerable<Type> GetExpectedTypes(MethodInfo methodInfo)
+        {
+            var expectedExceptionAttributes = methodInfo.GetCustomAttributes().Where(a => a.GetType().Name == "ExpectedExceptionAttribute");
+            foreach (var expectedExceptionAttribute in expectedExceptionAttributes)
+            {
+                var exceptionTypeMember = expectedExceptionAttribute.GetType().GetProperty("ExceptionType");
+                if (exceptionTypeMember != null)
+                {
+                    var expectedType = (Type)exceptionTypeMember.GetValue(expectedExceptionAttribute);
+                    yield return expectedType;
+                }
+            }
         }
     }
 }

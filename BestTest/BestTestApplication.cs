@@ -27,7 +27,7 @@ namespace BestTest
                     (int? v) => testParameters.ParallelRuns = v ?? Environment.ProcessorCount
                 },
                 {"nologo", "Hides header", _ => showLogo = false},
-                {"h|help", "show this message and exit", h => shouldShowHelp = h != null},
+                {"h|help", "show this message and exit", _ => shouldShowHelp = true},
             };
 
             try
