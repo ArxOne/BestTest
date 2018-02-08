@@ -16,7 +16,6 @@ namespace BestTest.Test
     {
         public int Run(TestParameters testParameters)
         {
-            //var t = LoadTests(testParameters);
             Test(testParameters);
             return 0;
         }

@@ -19,15 +19,11 @@ namespace BestTest.Test
 
         public string TypeName { get; }
 
-        public string TestMethodName { get; private set; }
-
-        internal StringDictionary Methods = new StringDictionary();
-
-        [SerializedMethodInfo] public MethodInfo TestMethod { get; set; }
-        [SerializedMethodInfo] public MethodInfo ClassInitialize { get; set; }
-        [SerializedMethodInfo] public MethodInfo ClassCleanup { get; set; }
-        [SerializedMethodInfo] public MethodInfo TestInitialize { get; set; }
-        [SerializedMethodInfo] public MethodInfo TestCleanup { get; set; }
+        [SerializedMethodInfo] public MethodInfo TestMethod { get; private set; }
+        [SerializedMethodInfo] public MethodInfo ClassInitialize { get; private set; }
+        [SerializedMethodInfo] public MethodInfo ClassCleanup { get; private set; }
+        [SerializedMethodInfo] public MethodInfo TestInitialize { get; private set; }
+        [SerializedMethodInfo] public MethodInfo TestCleanup { get; private set; }
 
         [Obsolete("Serialization-only ctor")]
         public TestDescription()
