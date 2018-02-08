@@ -5,8 +5,10 @@
 namespace BestTest.Test
 {
     using System;
+    using System.Collections.Specialized;
     using System.Linq;
     using System.Reflection;
+    using Aspect;
 
     [Serializable]
     public class TestDescription
@@ -17,42 +19,43 @@ namespace BestTest.Test
 
         public string TypeName { get; }
 
-        public string MethodName { get; }
+        public string TestMethodName { get; private set; }
 
-        [NonSerialized] private MethodInfo _method;
+        internal StringDictionary Methods = new StringDictionary();
 
-        public MethodInfo Method
-        {
-            get
-            {
-                if (_method == null)
-                    _method = GetMethod();
-                return _method;
-            }
-        }
+        [SerializedMethodInfo] public MethodInfo TestMethod { get; set; }
+        [SerializedMethodInfo] public MethodInfo ClassInitialize { get; set; }
+        [SerializedMethodInfo] public MethodInfo ClassCleanup { get; set; }
+        [SerializedMethodInfo] public MethodInfo TestInitialize { get; set; }
+        [SerializedMethodInfo] public MethodInfo TestCleanup { get; set; }
 
         [Obsolete("Serialization-only ctor")]
         public TestDescription()
         { }
 
-        public TestDescription(string assemblyPath, MethodInfo method)
+
+        public TestDescription(string assemblyPath, MethodInfo testMethod, MethodInfo classInitialize, MethodInfo classCleanup, MethodInfo testInitialize, MethodInfo testCleanup)
         {
             AssemblyPath = assemblyPath;
-            _method = method;
-            AssemblyName = method.DeclaringType.Assembly.FullName;
-            TypeName = method.DeclaringType.FullName;
-            MethodName = method.Name;
+            TestMethod = testMethod;
+            ClassInitialize = classInitialize;
+            ClassCleanup = classCleanup;
+            TestInitialize = testInitialize;
+            TestCleanup = testCleanup;
+            AssemblyName = testMethod.DeclaringType.Assembly.FullName;
+            TypeName = testMethod.DeclaringType.FullName;
         }
 
         /// <summary>
         /// Gets the method.
         /// Since we may have crossed appdomains, it needs to be retrieved
         /// </summary>
+        /// <param name="methodName">Name of the method.</param>
         /// <returns></returns>
-        private MethodInfo GetMethod()
+        public MethodInfo GetMethod(string methodName)
         {
             // a public test method has 0 parameters, remember?
-            var method = GetType().GetMethod(MethodName, new Type[0]);
+            var method = GetType().GetMethod(methodName, new Type[0]);
             return method;
         }
 

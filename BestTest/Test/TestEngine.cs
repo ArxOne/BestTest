@@ -10,6 +10,7 @@ namespace BestTest.Test
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using Reflection;
 
     public class TestEngine : MarshalByRefObject
     {
@@ -47,7 +48,7 @@ namespace BestTest.Test
             return allTests;
         }
 
-        private string GetSafeDirectoryName(string path)
+        private static string GetSafeDirectoryName(string path)
         {
             try
             {
@@ -64,29 +65,29 @@ namespace BestTest.Test
         private IEnumerable<TestDescription> EnumerateTests(Assembly assembly)
         {
             foreach (var testType in assembly.GetTypes().Where(IsTestClass))
+            {
+                MethodInfo classInitialize = null, testInitialize = null, testCleanup = null, classCleanup = null;
+                foreach (var method in testType.GetMethods().Where(IsTestMethod))
+                {
+                    if (!method.IsValidTestMethod())
+                        continue;
+                    if (method.HasAnyAttribute("ClassInitialize"))
+                        classInitialize = method;
+                    else if (method.HasAnyAttribute("ClassCleanup"))
+                        classCleanup = method;
+                    else if (method.HasAnyAttribute("TestInitialize"))
+                        testInitialize = method;
+                    else if (method.HasAnyAttribute("TestCleanup"))
+                        testCleanup = method;
+                }
+
                 foreach (var testMethod in testType.GetMethods().Where(IsTestMethod))
-                    yield return new TestDescription(assembly.Location, testMethod);
+                    yield return new TestDescription(assembly.Location, testMethod, classInitialize, classCleanup, testInitialize, testCleanup);
+            }
         }
 
-        private static bool IsTestClass(Type type)
-        {
-            // a test class is not abstract/interface and public
-            if (type.IsAbstract || type.IsInterface || !type.IsClass || !type.IsPublic)
-                return false;
-            var testAttributes = type.GetCustomAttributes();
-            return testAttributes.Any(a => a.GetType().Name == "TestClassAttribute" || a.GetType().Name == "TestFixtureAttribute");
-        }
-
-        private static bool IsTestMethod(MethodInfo method)
-        {
-            // a test method is non-static and public
-            if (method.IsStatic || !method.IsPublic)
-                return false;
-            if (method.GetParameters().Length > 0)
-                return false;
-            var testAttributes = method.GetCustomAttributes();
-            return testAttributes.Any(a => a.GetType().Name == "TestMethodAttribute" || a.GetType().Name == "TestAttribute");
-        }
+        private static bool IsTestClass(Type type) => type.IsValidTestType() && type.HasAnyAttribute("TestClass", "TestFixture");
+        private static bool IsTestMethod(MethodInfo method) => method.IsValidTestMethod() && method.HasAnyAttribute("TestMethod", "Test");
 
         [SeparateAppDomain]
         public void Test(TestParameters parameters)
@@ -99,7 +100,7 @@ namespace BestTest.Test
         [SeparateAppDomain]
         public void Test(TestDescription testDescription)
         {
-            var method = testDescription.Method;
+            var method = testDescription.TestMethod;
         }
     }
 }

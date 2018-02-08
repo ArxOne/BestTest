@@ -41,8 +41,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Aspect\SeparateAppDomain.cs" />
+    <Compile Include="Aspect\SerializedMethodInfo.cs" />
     <Compile Include="BestTestApplication.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Test\TestDescription.cs" />
     <Compile Include="Test\TestEngine.cs" />
     <Compile Include="Test\TestParameters.cs" />
