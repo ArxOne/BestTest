@@ -5,6 +5,7 @@
 namespace BestTest.Aspect
 {
     using System;
+    using System.Diagnostics;
     using ArxOne.MrAdvice.Advice;
 
     /// <summary>
@@ -14,12 +15,13 @@ namespace BestTest.Aspect
     /// <seealso cref="ArxOne.MrAdvice.Advice.IMethodAdvice" />
     public class SeparateAppDomain : Attribute, IMethodAdvice
     {
+        [DebuggerStepThrough]
         public void Advise(MethodAdviceContext context)
         {
-            var appDomain = AppDomain.CreateDomain(context.TargetMethod.Name);
+            var methodDeclaringType = context.TargetMethod.DeclaringType;
+            var appDomain = AppDomain.CreateDomain($"{methodDeclaringType.FullName}.{context.TargetMethod.Name}(...)");
             try
             {
-                var methodDeclaringType = context.TargetMethod.DeclaringType;
                 if (!methodDeclaringType.IsSubclassOf(typeof(MarshalByRefObject)))
                     throw new InvalidOperationException();
                 // Simple magic here
