@@ -5,23 +5,74 @@
 namespace BestTest.Test
 {
     using System;
+    using System.Linq;
     using System.Reflection;
 
     [Serializable]
-    internal class TestDescription
+    public class TestDescription
     {
-        public string TypeName { get; set; }
+        public string AssemblyPath { get; }
 
-        public string MethodName { get; set; }
+        public string AssemblyName { get; }
+
+        public string TypeName { get; }
+
+        public string MethodName { get; }
+
+        [NonSerialized] private MethodInfo _method;
+
+        public MethodInfo Method
+        {
+            get
+            {
+                if (_method == null)
+                    _method = GetMethod();
+                return _method;
+            }
+        }
 
         [Obsolete("Serialization-only ctor")]
         public TestDescription()
         { }
 
-        public TestDescription(MethodInfo methodInfo)
+        public TestDescription(string assemblyPath, MethodInfo method)
         {
-            TypeName = methodInfo.DeclaringType.AssemblyQualifiedName;
-            MethodName = methodInfo.Name;
+            AssemblyPath = assemblyPath;
+            _method = method;
+            AssemblyName = method.DeclaringType.Assembly.FullName;
+            TypeName = method.DeclaringType.FullName;
+            MethodName = method.Name;
+        }
+
+        /// <summary>
+        /// Gets the method.
+        /// Since we may have crossed appdomains, it needs to be retrieved
+        /// </summary>
+        /// <returns></returns>
+        private MethodInfo GetMethod()
+        {
+            // a public test method has 0 parameters, remember?
+            var method = GetType().GetMethod(MethodName, new Type[0]);
+            return method;
+        }
+
+        private new Type GetType()
+        {
+            // first, get the assembly
+            var assembly = GetAssembly() ?? LoadAssembly();
+            // then ask for type
+            var type = assembly.GetType(TypeName);
+            return type;
+        }
+
+        private Assembly GetAssembly()
+        {
+            return AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == AssemblyName);
+        }
+
+        private Assembly LoadAssembly()
+        {
+            return Assembly.LoadFrom(AssemblyPath);
         }
     }
 }

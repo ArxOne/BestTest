@@ -11,5 +11,7 @@ namespace BestTest.Test
     public class TestParameters
     {
         public List<string> AssemblyPaths { get; set; } = new List<string>();
+
+        public int ParallelRuns { get; set; } = 1;
     }
 }

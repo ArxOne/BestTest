@@ -22,6 +22,10 @@ namespace BestTest
             // https://github.com/xamarin/XamarinComponents/tree/master/XPlat/Mono.Options
             var options = new OptionSet
             {
+                {
+                    "m|maxcpucount:", "Specifies the maximum number of concurrent processes to use when building",
+                    (int? v) => testParameters.ParallelRuns = v ?? Environment.ProcessorCount
+                },
                 {"nologo", "Hides header", _ => showLogo = false},
                 {"h|help", "show this message and exit", h => shouldShowHelp = h != null},
             };
@@ -52,10 +56,10 @@ namespace BestTest
                 return -1;
             }
 
-            if(showLogo)
+            if (showLogo)
                 WriteHeader();
 
-            var testEngine=new TestEngine();
+            var testEngine = new TestEngine();
             return testEngine.Run(testParameters);
         }
 
