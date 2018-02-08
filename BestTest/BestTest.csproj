@@ -48,7 +48,6 @@
     <Compile Include="Test\TestParameters.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <None Include="Blobber" />
   </ItemGroup>
   <ItemGroup>
