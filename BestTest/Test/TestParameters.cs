@@ -13,5 +13,7 @@ namespace BestTest.Test
         public List<string> AssemblyPaths { get; set; } = new List<string>();
 
         public int ParallelRuns { get; set; } = 1;
+
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
     }
 }

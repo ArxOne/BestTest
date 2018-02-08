@@ -19,8 +19,9 @@ namespace BestTest.Test
 
         public string TypeName { get; }
 
-        private readonly string _methodName;
-        private string DebugLiteral => $"{TypeName}.{_methodName}";
+        public string MethodName { get; }
+
+        private string DebugLiteral => $"{TypeName}.{MethodName}";
 
         [SerializedMethodInfo] public MethodInfo TestMethod { get; private set; }
         [SerializedMethodInfo] public MethodInfo ClassInitialize { get; private set; }
@@ -42,7 +43,7 @@ namespace BestTest.Test
             TestCleanup = testCleanup;
             AssemblyName = testMethod.DeclaringType.Assembly.FullName;
             TypeName = testMethod.DeclaringType.FullName;
-            _methodName = testMethod.Name;
+            MethodName = testMethod.Name;
         }
     }
 }

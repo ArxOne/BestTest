@@ -22,8 +22,8 @@ namespace BestTest.Test
         {
             Step = step;
             Result = result;
-            ResultMessage = e.Message;
-            Exception = e.ToString();
+            ResultMessage = e?.Message;
+            Exception = e?.ToString();
         }
     }
 }

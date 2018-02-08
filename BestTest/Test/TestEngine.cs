@@ -10,6 +10,7 @@ namespace BestTest.Test
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
     using Reflection;
 
     public class TestEngine : MarshalByRefObject
@@ -96,34 +97,58 @@ namespace BestTest.Test
             var tests = EnumerateTests(parameters);
             var instances = new Dictionary<Type, TestInstance>();
             var assessments = new List<TestAssessment>();
-            foreach (var test in tests)
-                assessments.Add(Test(test, instances));
+            assessments.AddRange(tests.AsParallel().WithDegreeOfParallelism(parameters.ParallelRuns)
+                .Select(t => Trace(t, Test(t, instances, parameters))));
             Cleanup(instances);
         }
 
-        private void Cleanup(IDictionary<Type, TestInstance> testInstances)
+        private static TestAssessment Trace(TestDescription testDescription, TestAssessment testAssessment)
+        {
+            var methodName = testDescription.MethodName;
+            var totalWidth = 50;
+            methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
+            Console.WriteLine($"{methodName}: {testAssessment.Result} ({testAssessment.Exception})");
+            return testAssessment;
+        }
+
+        private static void Cleanup(IDictionary<Type, TestInstance> testInstances)
         {
             foreach (var testInstance in testInstances.Values)
                 Invoke(testInstance.Instance, testInstance.ClassCleanup, TestStep.ClassCleanup);
         }
 
-        public TestAssessment Test(TestDescription testDescription, IDictionary<Type, TestInstance> testInstances)
+        public TestAssessment Test(TestDescription testDescription, IDictionary<Type, TestInstance> testInstances, TestParameters parameters)
         {
             var testClass = testDescription.TestMethod.DeclaringType;
-            if (!testInstances.TryGetValue(testClass, out var testInstance))
+            TestInstance testInstance;
+            lock (testInstances)
             {
-                var instance = Activator.CreateInstance(testClass);
-                testInstance = new TestInstance { Instance = instance, ClassCleanup = testDescription.ClassCleanup };
-                testInstance.Assessment = Invoke(testInstance.Instance, testDescription.ClassInitialize, TestStep.ClassInitialize);
-                testInstances[testClass] = testInstance;
+                if (!testInstances.TryGetValue(testClass, out testInstance))
+                {
+                    var instance = Activator.CreateInstance(testClass);
+                    testInstance = new TestInstance { Instance = instance, ClassCleanup = testDescription.ClassCleanup };
+                    testInstance.Assessment = Invoke(testInstance.Instance, testDescription.ClassInitialize, TestStep.ClassInitialize);
+                    testInstances[testClass] = testInstance;
+                }
             }
 
+            TestAssessment testAssessment = null;
+            var thread = new Thread(delegate () { testAssessment = Test(testDescription, testInstance); });
+            thread.Start();
+            if (thread.Join(parameters.Timeout))
+                return testAssessment;
+
+            thread.Abort();
+            return new TestAssessment(TestStep.Test, TestResult.Timeout, null);
+        }
+
+        private static TestAssessment Test(TestDescription testDescription, TestInstance testInstance)
+        {
             var testAssessment = testInstance.Assessment
                                  ?? Invoke(testInstance.Instance, testDescription.TestInitialize, TestStep.TestInitialize)
                                  ?? Invoke(testInstance.Instance, testDescription.TestMethod, TestStep.Test)
                                  ?? Invoke(testInstance.Instance, testDescription.TestCleanup, TestStep.TestCleanup)
                                  ?? TestAssessment.Success;
-
             return testAssessment;
         }
 

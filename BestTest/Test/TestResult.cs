@@ -9,5 +9,6 @@ namespace BestTest.Test
         Success,
         Inconclusive,
         Failure,
+        Timeout,
     }
 }
