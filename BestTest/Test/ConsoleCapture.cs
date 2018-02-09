@@ -54,16 +54,21 @@ namespace BestTest.Test
         {
         }
 
+        // Shame here, but some apps (like mine) use the direct console
+        // On non-Windows systems, this works too, because the exception is muted (silent death)
+
         [DllImport("kernel32", SetLastError = true)]
         private static extern bool SetStdHandle(int nStdHandle, IntPtr hHandle);
 
         private const int STD_OUTPUT_HANDLE = -11;
+        private const int STD_ERROR_HANDLE = -12;
 
         private void MuteStdHandle()
         {
             try
             {
                 SetStdHandle(STD_OUTPUT_HANDLE, IntPtr.Zero);
+                SetStdHandle(STD_ERROR_HANDLE, IntPtr.Zero);
             }
             catch { }
         }
