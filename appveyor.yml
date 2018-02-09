@@ -20,7 +20,7 @@ build:
   verbosity: minimal
 
 deploy:
-  release: 'build $(build)'
+  release: build$(APPVEYOR_BUILD_NUMBER)
   description: 'Continuous build'
   provider: GitHub
   auth_token:
