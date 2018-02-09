@@ -6,6 +6,7 @@ namespace BestTest.Aspect
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using ArxOne.MrAdvice.Advice;
 
@@ -20,7 +21,9 @@ namespace BestTest.Aspect
         public void Advise(MethodAdviceContext context)
         {
             var methodDeclaringType = context.TargetMethod.DeclaringType;
-            var appDomain = AppDomain.CreateDomain($"{methodDeclaringType.FullName}.{context.TargetMethod.Name}(...)");
+            var assemblyLocation = methodDeclaringType.Assembly.Location;
+            var basePath = string.IsNullOrEmpty(assemblyLocation) ? null : Path.GetDirectoryName(assemblyLocation);
+            var appDomain = AppDomain.CreateDomain($"{methodDeclaringType.FullName}.{context.TargetMethod.Name}(...)", null, basePath, null, false);
             try
             {
                 if (!methodDeclaringType.IsSubclassOf(typeof(MarshalByRefObject)))
