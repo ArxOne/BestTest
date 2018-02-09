@@ -68,23 +68,34 @@ namespace BestTest.Test
         {
             foreach (var testType in assembly.GetTypes().Where(IsTestClass))
             {
-                MethodInfo classInitialize = null, testInitialize = null, testCleanup = null, classCleanup = null;
-                foreach (var method in testType.GetMethods().Where(IsTestMethod))
+                MethodInfo assemblyInitialize = null, assemblyCleanup = null, classInitialize = null, classCleanup = null, testInitialize = null, testCleanup = null;
+                foreach (var method in testType.GetMethods())
                 {
                     if (!method.IsValidTestMethod())
                         continue;
-                    if (method.HasAnyAttribute("ClassInitialize"))
-                        classInitialize = method;
-                    else if (method.HasAnyAttribute("ClassCleanup"))
-                        classCleanup = method;
-                    else if (method.HasAnyAttribute("TestInitialize"))
-                        testInitialize = method;
-                    else if (method.HasAnyAttribute("TestCleanup"))
-                        testCleanup = method;
+                    // static methods only allowed in assembly manipulation
+                    if (method.IsStatic)
+                    {
+                        if (method.HasAnyAttribute("AssemblyInitialize"))
+                            assemblyInitialize = method;
+                        if (method.HasAnyAttribute("AssemblyCleanup"))
+                            assemblyCleanup = method;
+                    }
+                    else
+                    {
+                        if (method.HasAnyAttribute("ClassInitialize"))
+                            classInitialize = method;
+                        else if (method.HasAnyAttribute("ClassCleanup"))
+                            classCleanup = method;
+                        else if (method.HasAnyAttribute("TestInitialize"))
+                            testInitialize = method;
+                        else if (method.HasAnyAttribute("TestCleanup"))
+                            testCleanup = method;
+                    }
                 }
 
-                foreach (var testMethod in testType.GetMethods().Where(IsTestMethod))
-                    yield return new TestDescription(assembly.Location, testMethod, classInitialize, classCleanup, testInitialize, testCleanup);
+                foreach (var testMethod in testType.GetMethods().Where(t => IsTestMethod(t) && !t.IsStatic))
+                    yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup);
             }
         }
 
@@ -95,100 +106,65 @@ namespace BestTest.Test
         public void Test(TestParameters parameters)
         {
             var tests = EnumerateTests(parameters);
-            var instances = new Dictionary<Type, TestInstance>();
-            var assessments = new List<TestAssessment>();
-            assessments.AddRange(tests.AsParallel().WithDegreeOfParallelism(parameters.ParallelRuns)
-                .Select(t => Trace(t, Test(t, instances, parameters))));
-            Cleanup(instances);
+            var instances = new TestInstances();
+            var assessments = new List<TestAssessments>();
+            assessments.AddRange(tests
+                //.AsParallel().WithDegreeOfParallelism(parameters.ParallelRuns)
+                .Select(t => Trace(new TestAssessments(t, Test(t, instances, parameters)))));
+            instances.Cleanup();
         }
 
-        private static TestAssessment Trace(TestDescription testDescription, TestAssessment testAssessment)
+        private static TestAssessments Trace(TestAssessments testAssessments)
         {
-            var methodName = testDescription.MethodName;
-            var totalWidth = 50;
+            var methodName = testAssessments.Description.MethodName;
+            const int totalWidth = 60;
+            var testAssessment = testAssessments.TestStepAssessment;
             methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
-            Console.WriteLine($"{methodName}: {testAssessment.Result} ({testAssessment.Exception})");
-            return testAssessment;
+            Console.WriteLine($"{methodName}: {testAssessment?.Result ?? TestResult.Success} ({testAssessment?.Exception})");
+            return testAssessments;
         }
 
-        private static void Cleanup(IDictionary<Type, TestInstance> testInstances)
+        /// <summary>
+        /// Runs a single test.
+        /// </summary>
+        /// <param name="testDescription">The test description.</param>
+        /// <param name="testInstances">The test instances.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>A list of <see cref="TestAssessment"/>. The last of them indicates overall success. Multiple assessments will give details</returns>
+        private IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
         {
-            foreach (var testInstance in testInstances.Values)
-                Invoke(testInstance.Instance, testInstance.ClassCleanup, TestStep.ClassCleanup);
-        }
+            // initialize test
+            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
+            if (initializationFailureTestAssessment != null)
+                yield return initializationFailureTestAssessment;
 
-        public TestAssessment Test(TestDescription testDescription, IDictionary<Type, TestInstance> testInstances, TestParameters parameters)
-        {
-            var testClass = testDescription.TestMethod.DeclaringType;
-            TestInstance testInstance;
-            lock (testInstances)
-            {
-                if (!testInstances.TryGetValue(testClass, out testInstance))
-                {
-                    var instance = Activator.CreateInstance(testClass);
-                    testInstance = new TestInstance { Instance = instance, ClassCleanup = testDescription.ClassCleanup };
-                    testInstance.Assessment = Invoke(testInstance.Instance, testDescription.ClassInitialize, TestStep.ClassInitialize);
-                    testInstances[testClass] = testInstance;
-                }
-            }
-
-            TestAssessment testAssessment = null;
-            var thread = new Thread(delegate () { testAssessment = Test(testDescription, testInstance); });
+            // run it
+            TestAssessment[] testAssessments = null;
+            var thread = new Thread(delegate () { testAssessments = Test(testDescription, testInstance).ToArray(); });
             thread.Start();
-            if (thread.Join(parameters.Timeout))
-                return testAssessment;
+            // wait for test
+            if (thread.Join(parameters.Timeout)) // test ended in time
+            {
+                foreach (var testAssessment in testAssessments)
+                    yield return testAssessment;
+                yield break;
+            }
 
+            // in case it took too long, say it
             thread.Abort();
-            return new TestAssessment(TestStep.Test, TestResult.Timeout, null);
+            yield return new TestAssessment(TestStep.Test, TestResult.Timeout, null);
         }
 
-        private static TestAssessment Test(TestDescription testDescription, TestInstance testInstance)
+        private static IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstance testInstance)
         {
-            var testAssessment = testInstance.Assessment
-                                 ?? Invoke(testInstance.Instance, testDescription.TestInitialize, TestStep.TestInitialize)
-                                 ?? Invoke(testInstance.Instance, testDescription.TestMethod, TestStep.Test)
-                                 ?? Invoke(testInstance.Instance, testDescription.TestCleanup, TestStep.TestCleanup)
-                                 ?? TestAssessment.Success;
-            return testAssessment;
-        }
-
-        private static TestAssessment Invoke(object instance, MethodInfo method, TestStep step)
-        {
-            if (method == null)
-                return null;
-            try
-            {
-                method.Invoke(instance, NoParameter);
-                return null;
-            }
-            catch (TargetInvocationException e) when (e.InnerException.GetType().Name == "AssertInconclusiveException")
-            {
-                return new TestAssessment(step, TestResult.Inconclusive, e.InnerException);
-            }
-            catch (TargetInvocationException e) when (e.InnerException.GetType().Name == "AssertFailedException")
-            {
-                return new TestAssessment(step, TestResult.Failure, e.InnerException);
-            }
-            catch (TargetInvocationException e)
-            {
-                if (GetExpectedTypes(method).Any(expectedType => expectedType == e.InnerException.GetType()))
-                    return null;
-                return new TestAssessment(step, TestResult.Failure, e.InnerException);
-            }
-        }
-
-        private static IEnumerable<Type> GetExpectedTypes(MethodInfo methodInfo)
-        {
-            var expectedExceptionAttributes = methodInfo.GetCustomAttributes().Where(a => a.GetType().Name == "ExpectedExceptionAttribute");
-            foreach (var expectedExceptionAttribute in expectedExceptionAttributes)
-            {
-                var exceptionTypeMember = expectedExceptionAttribute.GetType().GetProperty("ExceptionType");
-                if (exceptionTypeMember != null)
-                {
-                    var expectedType = (Type)exceptionTypeMember.GetValue(expectedExceptionAttribute);
-                    yield return expectedType;
-                }
-            }
+            // if initializer fails, no need to run the test
+            var testAssessment = TestAssessment.Invoke(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance)
+                                 ?? TestAssessment.Invoke(testDescription.TestMethod, TestStep.Test, testInstance.Instance)
+                                 ?? TestAssessment.TestSuccess;
+            yield return testAssessment;
+            var cleanupTestAssessment = TestAssessment.Invoke(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance);
+            if (cleanupTestAssessment != null)
+                yield return cleanupTestAssessment;
         }
     }
 }

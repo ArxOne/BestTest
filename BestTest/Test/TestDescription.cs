@@ -24,6 +24,8 @@ namespace BestTest.Test
         private string DebugLiteral => $"{TypeName}.{MethodName}";
 
         [SerializedMethodInfo] public MethodInfo TestMethod { get; private set; }
+        [SerializedMethodInfo] public MethodInfo AssemblyInitialize { get; private set; }
+        [SerializedMethodInfo] public MethodInfo AssemblyCleanup { get; private set; }
         [SerializedMethodInfo] public MethodInfo ClassInitialize { get; private set; }
         [SerializedMethodInfo] public MethodInfo ClassCleanup { get; private set; }
         [SerializedMethodInfo] public MethodInfo TestInitialize { get; private set; }
@@ -33,14 +35,18 @@ namespace BestTest.Test
         public TestDescription()
         { }
 
-        public TestDescription(string assemblyPath, MethodInfo testMethod, MethodInfo classInitialize, MethodInfo classCleanup, MethodInfo testInitialize, MethodInfo testCleanup)
+        public TestDescription(string assemblyPath, MethodInfo testMethod, MethodInfo testInitialize, MethodInfo testCleanup, MethodInfo classInitialize, MethodInfo classCleanup,
+            MethodInfo assemblyInitialize, MethodInfo assemblyCleanup)
         {
             AssemblyPath = assemblyPath;
             TestMethod = testMethod;
-            ClassInitialize = classInitialize;
-            ClassCleanup = classCleanup;
             TestInitialize = testInitialize;
             TestCleanup = testCleanup;
+            ClassInitialize = classInitialize;
+            ClassCleanup = classCleanup;
+            AssemblyInitialize = assemblyInitialize;
+            AssemblyCleanup = assemblyCleanup;
+
             AssemblyName = testMethod.DeclaringType.Assembly.FullName;
             TypeName = testMethod.DeclaringType.FullName;
             MethodName = testMethod.Name;

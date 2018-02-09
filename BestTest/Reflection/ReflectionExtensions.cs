@@ -19,7 +19,7 @@ namespace BestTest.Reflection
 
         public static bool IsValidTestMethod(this MethodInfo methodInfo)
         {
-            return methodInfo.IsPublic && !methodInfo.IsGenericMethod && !methodInfo.IsStatic && !methodInfo.IsAbstract && methodInfo.GetParameters().Length == 0;
+            return methodInfo.IsPublic && !methodInfo.IsGenericMethod && !methodInfo.IsAbstract && methodInfo.GetParameters().Length == 0;
         }
 
         public static bool HasAnyAttribute(this ICustomAttributeProvider methodInfo, params string[] attributePrefixes)

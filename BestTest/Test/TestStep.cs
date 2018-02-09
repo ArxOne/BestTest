@@ -6,10 +6,12 @@ namespace BestTest.Test
 {
     public enum TestStep
     {
+        AssemblyInitialize,
         ClassInitialize,
         TestInitialize,
         Test,
         TestCleanup,
         ClassCleanup,
+        AssemblyCleanup,
     }
 }

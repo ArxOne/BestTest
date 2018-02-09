@@ -4,12 +4,11 @@
 
 namespace BestTest.Test
 {
-    using System.Reflection;
+    public class TestInstance
+    {
+        public object Instance;
 
-    public  class TestInstance
-  {
-      public object Instance;
-      public MethodInfo ClassCleanup;
-      public TestAssessment Assessment;
-  }
+        public TestAssessment ClassInitializeFailure;
+        public TestAssessment AssemblyInitializeFailure;
+    }
 }
