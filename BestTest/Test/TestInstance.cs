@@ -8,6 +8,8 @@ namespace BestTest.Test
     {
         public object Instance;
 
+        public ITestContext Context;
+
         public TestAssessment ClassInitializeFailure;
         public TestAssessment AssemblyInitializeFailure;
     }

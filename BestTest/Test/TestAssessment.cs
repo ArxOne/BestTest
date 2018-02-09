@@ -8,7 +8,7 @@ namespace BestTest.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using System.Xml;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class TestAssessment
     {
@@ -70,8 +70,28 @@ namespace BestTest.Test
         /// <param name="method">The method.</param>
         /// <param name="step">The step.</param>
         /// <param name="instance">The instance.</param>
-        /// <returns>An assessment on failure, null on success</returns>
-        public static TestAssessment Invoke(MethodInfo method, TestStep step, object instance) => Invoke(() => method?.Invoke(instance, NoParameter), step, method);
+        /// <param name="parameter">The parameter.</param>
+        /// <returns>
+        /// An assessment on failure, null on success
+        /// </returns>
+        public static TestAssessment Invoke(MethodInfo method, TestStep step, object instance, object parameter = null)
+        {
+            if (method == null)
+                return null;
+            return Invoke(delegate
+            {
+                if (method.IsStatic)
+                    instance = null;
+                var parameterInfos = method.GetParameters();
+                if (parameterInfos.Length == 1)
+                {
+                    var testContext = TestContextBuilder.Get(parameterInfos[0].ParameterType);
+                    method.Invoke(instance, new[] { testContext });
+                }
+                else
+                    method.Invoke(instance, NoParameter);
+            }, step, method);
+        }
 
         private static IEnumerable<Type> GetExpectedExceptionTypes(ICustomAttributeProvider attributeProvider)
         {

@@ -17,7 +17,7 @@ namespace BestTest.Test
         private readonly IDictionary<Type, TestInstance> _testInstances = new Dictionary<Type, TestInstance>();
         private readonly HashSet<string> _assemblies = new HashSet<string>();
 
-        private readonly IList<Tuple<object, MethodInfo>> _classCleanup = new List<Tuple<object, MethodInfo>>();
+        private readonly IList<Tuple<object, MethodInfo, object>> _classCleanup = new List<Tuple<object, MethodInfo, object>>();
         private readonly IList<MethodInfo> _assemblyCleanup = new List<MethodInfo>();
 
         public TestAssessment[] Cleanup() => DoCleanup().Where(a => a != null).ToArray();
@@ -25,7 +25,7 @@ namespace BestTest.Test
         private IEnumerable<TestAssessment> DoCleanup()
         {
             foreach (var cleanup in _classCleanup)
-                yield return TestAssessment.Invoke(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1);
+                yield return TestAssessment.Invoke(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3);
             foreach (var cleanup in _assemblyCleanup)
                 yield return TestAssessment.Invoke(cleanup, TestStep.AssemblyCleanup, null);
         }
@@ -62,16 +62,27 @@ namespace BestTest.Test
                 }
 
                 // and initialize the type
-                testInstance.ClassInitializeFailure = failure = TestAssessment.Invoke(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
-                    ?? TestAssessment.Invoke(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance);
+                testInstance.ClassInitializeFailure = failure =
+                    TestAssessment.Invoke(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
+                    ?? TestAssessment.Invoke(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
+                    ?? TestAssessment.Invoke(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
                 if (failure != null)
                     return null;
 
                 // cleanup if initialized
-                _classCleanup.Add(Tuple.Create(testInstance.Instance, testDescription.ClassCleanup));
+                _classCleanup.Add(Tuple.Create(testInstance.Instance, testDescription.ClassCleanup, (object)testInstance.Context));
 
                 return testInstance;
             }
+        }
+
+        private void SetTestContext(object instance, ITestContext context)
+        {
+            var contextPropetyInfo = instance.GetType().GetProperty("TestContext");
+            if (contextPropetyInfo == null)
+                return;
+            var testContext = TestContextBuilder.Get(contextPropetyInfo.PropertyType);
+            contextPropetyInfo.SetValue(instance, testContext);
         }
     }
 }

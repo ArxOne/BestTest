@@ -37,6 +37,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -47,6 +48,7 @@
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Test\TestAssessment.cs" />
     <Compile Include="Test\TestAssessments.cs" />
+    <Compile Include="Test\TestContextBuilder.cs" />
     <Compile Include="Test\TestDescription.cs" />
     <Compile Include="Test\TestEngine.cs" />
     <Compile Include="Test\TestInstance.cs" />
@@ -67,6 +69,9 @@
     </PackageReference>
     <PackageReference Include="MrAdvice">
       <Version>2.5.23</Version>
+    </PackageReference>
+    <PackageReference Include="MSTest.TestFramework">
+      <Version>1.2.0</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

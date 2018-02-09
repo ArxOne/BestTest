@@ -83,15 +83,16 @@ namespace BestTest.Test
                     }
                     else
                     {
-                        if (method.HasAnyAttribute("ClassInitialize"))
-                            classInitialize = method;
-                        else if (method.HasAnyAttribute("ClassCleanup"))
-                            classCleanup = method;
-                        else if (method.HasAnyAttribute("TestInitialize"))
+                        if (method.HasAnyAttribute("TestInitialize"))
                             testInitialize = method;
-                        else if (method.HasAnyAttribute("TestCleanup"))
+                        if (method.HasAnyAttribute("TestCleanup"))
                             testCleanup = method;
                     }
+                    // class methods apparently can be both (mother fuckers!)
+                    if (method.HasAnyAttribute("ClassInitialize"))
+                        classInitialize = method;
+                    if (method.HasAnyAttribute("ClassCleanup"))
+                        classCleanup = method;
                 }
 
                 foreach (var testMethod in testType.GetMethods().Where(t => IsTestMethod(t) && !t.IsStatic))
@@ -158,11 +159,11 @@ namespace BestTest.Test
         private static IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstance testInstance)
         {
             // if initializer fails, no need to run the test
-            var testAssessment = TestAssessment.Invoke(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance)
-                                 ?? TestAssessment.Invoke(testDescription.TestMethod, TestStep.Test, testInstance.Instance)
+            var testAssessment = TestAssessment.Invoke(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
+                                 ?? TestAssessment.Invoke(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
                                  ?? TestAssessment.TestSuccess;
             yield return testAssessment;
-            var cleanupTestAssessment = TestAssessment.Invoke(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance);
+            var cleanupTestAssessment = TestAssessment.Invoke(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
             if (cleanupTestAssessment != null)
                 yield return cleanupTestAssessment;
         }
