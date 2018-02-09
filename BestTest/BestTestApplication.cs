@@ -26,6 +26,9 @@ namespace BestTest
                     "m|maxcpucount:", "Specifies the maximum number of concurrent processes to use when building",
                     (int? v) => testParameters.ParallelRuns = v ?? Environment.ProcessorCount
                 },
+                {"ai|noassemblyisolation", _ => testParameters.IsolateAssemblies = false},
+                {"is|inconclusiveassucceeded", _ => testParameters.InconclusiveAsError = false},
+                {"t|timeout=", (TimeSpan t) => testParameters.Timeout = t},
                 {"nologo", "Hides header", _ => showLogo = false},
                 {"h|help", "show this message and exit", _ => shouldShowHelp = true},
             };
