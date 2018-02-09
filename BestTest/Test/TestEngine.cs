@@ -18,7 +18,7 @@ namespace BestTest.Test
     {
         public int Run(TestParameters testParameters)
         {
-            return Test(testParameters);
+            return RunTests(testParameters);
         }
 
         [SeparateAppDomain]
@@ -109,14 +109,11 @@ namespace BestTest.Test
         private static bool IsTestMethod(MethodInfo method) => method.IsValidTestMethod() && method.HasAnyAttribute("TestMethod", "Test");
 
         [SeparateAppDomain]
-        public int Test(TestParameters parameters)
+        private int RunTests(TestParameters parameters)
         {
             var t0 = DateTime.UtcNow;
             var consoleWriter = new ConsoleWriter(Console.Out);
-            var testDescriptions = EnumerateTests(parameters).ToArray();
-            var groupedTestDescriptions = GroupDescriptions(testDescriptions, parameters);
-            var testSets = groupedTestDescriptions.Select(t => new TestSet(t, testDescriptions.Length));
-            var results = testSets.SelectMany(testSet => Test(testSet, parameters, consoleWriter)).ToArray();
+            var results = Test(parameters, consoleWriter);
             var successCount = results.Count(r => r.ResultCode == ResultCode.Success);
             var inconclusiveCount = results.Count(r => r.ResultCode == ResultCode.Inconclusive);
             var failureCount = results.Count(r => r.ResultCode == ResultCode.Failure);
@@ -133,6 +130,35 @@ namespace BestTest.Test
             if (parameters.InconclusiveAsError)
                 errors += inconclusiveCount;
             return errors;
+        }
+
+        /// <summary>
+        /// Runs the tests described by parameters.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
+        public TestResult[] Test(TestParameters parameters)
+        {
+            return Test(parameters, new ConsoleWriter(Console.Out));
+        }
+
+        public TestResult[] Test(TestParameters parameters, ConsoleWriter consoleWriter)
+        {
+            var testDescriptions = EnumerateTests(parameters).ToArray();
+            return Test(testDescriptions, parameters, consoleWriter);
+        }
+
+        public TestResult[] Test(TestDescription[] testDescriptions, TestParameters parameters)
+        {
+            return Test(testDescriptions, parameters, new ConsoleWriter(Console.Out));
+        }
+
+        public TestResult[] Test(TestDescription[] testDescriptions, TestParameters parameters, ConsoleWriter consoleWriter)
+        {
+            var groupedTestDescriptions = GroupDescriptions(testDescriptions, parameters);
+            var testSets = groupedTestDescriptions.Select(t => new TestSet(t, testDescriptions.Length));
+            var results = testSets.SelectMany(testSet => Test(testSet, parameters, consoleWriter)).ToArray();
+            return results;
         }
 
         [SeparateAppDomain]

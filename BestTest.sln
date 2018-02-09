@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorseTest", "WorseTest\Wors
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FCE54CC3-15DC-4BCA-8FFE-E3418F59B716}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BestTestTest", "BestTestTest\BestTestTest.csproj", "{326FE377-6C04-4DB5-8F7F-4E8206CA312C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,12 +28,17 @@ Global
 		{608E17AD-7D83-405D-A180-FE64E6568A4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{608E17AD-7D83-405D-A180-FE64E6568A4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{608E17AD-7D83-405D-A180-FE64E6568A4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{326FE377-6C04-4DB5-8F7F-4E8206CA312C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{326FE377-6C04-4DB5-8F7F-4E8206CA312C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{326FE377-6C04-4DB5-8F7F-4E8206CA312C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{326FE377-6C04-4DB5-8F7F-4E8206CA312C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{608E17AD-7D83-405D-A180-FE64E6568A4B} = {FCE54CC3-15DC-4BCA-8FFE-E3418F59B716}
+		{326FE377-6C04-4DB5-8F7F-4E8206CA312C} = {FCE54CC3-15DC-4BCA-8FFE-E3418F59B716}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6C72C90A-41B2-430F-931B-12283F249BF9}

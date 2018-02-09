@@ -9,7 +9,7 @@ namespace WorseTest
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class UnitTest1
+    public class SimpleTest
     {
         [TestMethod]
         public void SucceedingTest()

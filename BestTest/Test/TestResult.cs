@@ -6,9 +6,11 @@ namespace BestTest.Test
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
 
     [Serializable]
+    [DebuggerDisplay("{Description.MethodName}: {ResultCode}")]
     public class TestResult
     {
         public TestDescription Description { get; }
