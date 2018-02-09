@@ -38,13 +38,14 @@ namespace BestTest.Test
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TestSet"/> class.
+        /// Initializes a new instance of the <see cref="TestSet" /> class.
         /// </summary>
         /// <param name="descriptions">The descriptions.</param>
-        public TestSet(IEnumerable<TestDescription> descriptions)
+        /// <param name="totalCount">The total count.</param>
+        public TestSet(IEnumerable<TestDescription> descriptions, int totalCount)
         {
             _descriptions = new Queue<TestDescription>(descriptions);
-            Count = _descriptions.Count;
+            Count = totalCount;
         }
 
         /// <summary>

@@ -113,11 +113,10 @@ namespace BestTest.Test
         {
             var t0 = DateTime.UtcNow;
             var consoleWriter = new ConsoleWriter(Console.Out);
-            var testDescriptions = EnumerateTests(parameters);
-            var testSet = new TestSet(testDescriptions);
-            var runners = CreateRunners(testSet, parameters, consoleWriter);
-            Await(runners);
-            var results = testSet.Results;
+            var testDescriptions = EnumerateTests(parameters).ToArray();
+            var groupedTestDescriptions = GroupDescriptions(testDescriptions, parameters);
+            var testSets = groupedTestDescriptions.Select(t => new TestSet(t, testDescriptions.Length));
+            var results = testSets.SelectMany(testSet => Test(testSet, parameters, consoleWriter)).ToArray();
             var successCount = results.Count(r => r.ResultCode == ResultCode.Success);
             var inconclusiveCount = results.Count(r => r.ResultCode == ResultCode.Inconclusive);
             var failureCount = results.Count(r => r.ResultCode == ResultCode.Failure);
@@ -128,12 +127,27 @@ namespace BestTest.Test
             consoleWriter.WriteLine($"- inconclusive tests : {inconclusiveCount}");
             consoleWriter.WriteLine($"- failed tests       : {failureCount}");
             consoleWriter.WriteLine($"- timeout tests      : {timeoutCount}");
-            var dt = DateTime.UtcNow - t0;
+            var dt = GetLiteral(DateTime.UtcNow - t0);
             consoleWriter.WriteLine($"Total time           : {dt}");
             var errors = failureCount + timeoutCount;
             if (parameters.InconclusiveAsError)
                 errors += inconclusiveCount;
             return errors;
+        }
+
+        [SeparateAppDomain]
+        private TestResult[] Test(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
+        {
+            var runners = CreateRunners(testSet, parameters, consoleWriter);
+            Await(runners);
+            return testSet.Results;
+        }
+
+        private IEnumerable<IEnumerable<TestDescription>> GroupDescriptions(IEnumerable<TestDescription> testDescriptions, TestParameters parameters)
+        {
+            if (parameters.IsolateAssemblies)
+                return testDescriptions.GroupBy(t => t.AssemblyName);
+            return new[] { testDescriptions };
         }
 
         /// <summary>
