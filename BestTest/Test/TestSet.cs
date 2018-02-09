@@ -18,9 +18,9 @@ namespace BestTest.Test
         public TestSet() { }
 
         private readonly Queue<TestDescription> _descriptions;
-        private readonly IList<TestAssessments> _assessments = new List<TestAssessments>();
+        private readonly IList<TestResult> _assessments = new List<TestResult>();
 
-        public IEnumerable<TestAssessments> Assessments
+        public IEnumerable<TestResult> Assessments
         {
             get
             {
@@ -52,10 +52,10 @@ namespace BestTest.Test
             }
         }
 
-        public void PushAssessment(TestAssessments assessments)
+        public void PushAssessment(TestResult result)
         {
             lock (_assessments)
-                _assessments.Add(assessments);
+                _assessments.Add(result);
         }
     }
 }

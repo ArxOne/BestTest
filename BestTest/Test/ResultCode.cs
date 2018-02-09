@@ -4,7 +4,7 @@
 
 namespace BestTest.Test
 {
-    public enum TestResultCode
+    public enum ResultCode
     {
         Success,
         Inconclusive,

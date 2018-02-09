@@ -48,15 +48,15 @@
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Test\ConsoleCapture.cs" />
     <Compile Include="Test\ConsoleWriter.cs" />
+    <Compile Include="Test\StepResult.cs" />
     <Compile Include="Test\TestResult.cs" />
-    <Compile Include="Test\TestAssessments.cs" />
     <Compile Include="Test\TestContextBuilder.cs" />
     <Compile Include="Test\TestDescription.cs" />
     <Compile Include="Test\TestEngine.cs" />
     <Compile Include="Test\TestInstance.cs" />
     <Compile Include="Test\TestInstances.cs" />
     <Compile Include="Test\TestParameters.cs" />
-    <Compile Include="Test\TestResultCode.cs" />
+    <Compile Include="Test\ResultCode.cs" />
     <Compile Include="Test\TestSet.cs" />
     <Compile Include="Test\TestStep.cs" />
   </ItemGroup>
