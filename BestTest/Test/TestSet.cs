@@ -18,14 +18,22 @@ namespace BestTest.Test
         public TestSet() { }
 
         private readonly Queue<TestDescription> _descriptions;
-        private readonly IList<TestResult> _assessments = new List<TestResult>();
+        private readonly IList<TestResult> _results = new List<TestResult>();
+        
+        /// <summary>
+        /// Gets the total tests count.
+        /// </summary>
+        /// <value>
+        /// The count.
+        /// </value>
+        public int Count { get; }
 
-        public IEnumerable<TestResult> Assessments
+        public TestResult[] Results
         {
             get
             {
-                lock (_assessments)
-                    return _assessments.ToArray();
+                lock (_results)
+                    return _results.ToArray();
             }
         }
 
@@ -36,6 +44,7 @@ namespace BestTest.Test
         public TestSet(IEnumerable<TestDescription> descriptions)
         {
             _descriptions = new Queue<TestDescription>(descriptions);
+            Count = _descriptions.Count;
         }
 
         /// <summary>
@@ -52,10 +61,10 @@ namespace BestTest.Test
             }
         }
 
-        public void PushAssessment(TestResult result)
+        public void PushResult(TestResult result)
         {
-            lock (_assessments)
-                _assessments.Add(result);
+            lock (_results)
+                _results.Add(result);
         }
     }
 }

@@ -6,6 +6,7 @@ namespace BestTest.Test
 {
     using System;
     using System.IO;
+    using System.Runtime.InteropServices;
     using System.Text;
 
     /// <summary>
@@ -46,10 +47,25 @@ namespace BestTest.Test
             var consoleWriter = new ConsoleWriter();
             Console.SetOut(consoleWriter);
             Console.SetError(consoleWriter);
+            MuteStdHandle();
         }
 
         public void Dispose()
         {
+        }
+
+        [DllImport("kernel32", SetLastError = true)]
+        private static extern bool SetStdHandle(int nStdHandle, IntPtr hHandle);
+
+        private const int STD_OUTPUT_HANDLE = -11;
+
+        private void MuteStdHandle()
+        {
+            try
+            {
+                SetStdHandle(STD_OUTPUT_HANDLE, IntPtr.Zero);
+            }
+            catch { }
         }
     }
 }

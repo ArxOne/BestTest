@@ -12,19 +12,22 @@ namespace BestTest.Test
     public class TestResult
     {
         public TestDescription Description { get; }
+        public TimeSpan Duration { get; }
         public IList<StepResult> StepResults { get; }
         public ResultCode ResultCode => StepResults.Last().ResultCode;
         public StepResult TestStepResult => StepResults.SingleOrDefault(a => a.Step == TestStep.Test);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TestResult"/> class.
+        /// Initializes a new instance of the <see cref="TestResult" /> class.
         /// </summary>
         /// <param name="description">The description.</param>
         /// <param name="stepResults">The assessments.</param>
-        public TestResult(TestDescription description, IEnumerable<StepResult> stepResults)
+        /// <param name="duration">The duration.</param>
+        public TestResult(TestDescription description, StepResult[] stepResults, TimeSpan duration)
         {
             Description = description;
-            StepResults = stepResults.ToArray();
+            Duration = duration;
+            StepResults = stepResults;
         }
     }
 }

@@ -53,7 +53,7 @@ namespace BestTest.Test
             }
             catch (TargetInvocationException e)
             {
-                if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider).Any(expectedType => expectedType == e.InnerException.GetType()))
+                if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider).Any(expectedType => expectedType.IsInstanceOfType(e.InnerException)))
                     return null;
                 return new StepResult(step, ResultCode.Failure, e.InnerException);
             }

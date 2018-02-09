@@ -15,5 +15,7 @@ namespace BestTest.Test
         public int ParallelRuns { get; set; } = 1;
 
         public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
+
+        public bool InconclusiveAsError { get; set; } = true;
     }
 }

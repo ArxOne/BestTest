@@ -7,6 +7,7 @@ namespace BestTest.Test
     using Aspect;
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -17,8 +18,7 @@ namespace BestTest.Test
     {
         public int Run(TestParameters testParameters)
         {
-            Test(testParameters);
-            return 0;
+            return Test(testParameters);
         }
 
         [SeparateAppDomain]
@@ -109,13 +109,31 @@ namespace BestTest.Test
         private static bool IsTestMethod(MethodInfo method) => method.IsValidTestMethod() && method.HasAnyAttribute("TestMethod", "Test");
 
         [SeparateAppDomain]
-        public void Test(TestParameters parameters)
+        public int Test(TestParameters parameters)
         {
+            var t0 = DateTime.UtcNow;
             var consoleWriter = new ConsoleWriter(Console.Out);
             var testDescriptions = EnumerateTests(parameters);
             var testSet = new TestSet(testDescriptions);
             var runners = CreateRunners(testSet, parameters, consoleWriter);
             Await(runners);
+            var results = testSet.Results;
+            var successCount = results.Count(r => r.ResultCode == ResultCode.Success);
+            var inconclusiveCount = results.Count(r => r.ResultCode == ResultCode.Inconclusive);
+            var failureCount = results.Count(r => r.ResultCode == ResultCode.Failure);
+            var timeoutCount = results.Count(r => r.ResultCode == ResultCode.Timeout);
+            consoleWriter.WriteLine();
+            consoleWriter.WriteLine($"Total tests          : {results.Length}");
+            consoleWriter.WriteLine($"- succeeded tests    : {successCount}");
+            consoleWriter.WriteLine($"- inconclusive tests : {inconclusiveCount}");
+            consoleWriter.WriteLine($"- failed tests       : {failureCount}");
+            consoleWriter.WriteLine($"- timeout tests      : {timeoutCount}");
+            var dt = DateTime.UtcNow - t0;
+            consoleWriter.WriteLine($"Total time           : {dt}");
+            var errors = failureCount + timeoutCount;
+            if (parameters.InconclusiveAsError)
+                errors += inconclusiveCount;
+            return errors;
         }
 
         /// <summary>
@@ -156,21 +174,38 @@ namespace BestTest.Test
                 if (testDescription == null)
                     break;
 
-                var assessment = Test(testDescription, testInstances, parameters);
-                var testAssessments = new TestResult(testDescription, assessment);
-                Trace(testAssessments, consoleWriter);
-                testSet.PushAssessment(testAssessments);
+                var t0 = DateTime.UtcNow;
+                var stepResults = Test(testDescription, testInstances, parameters).ToArray();
+                var testAssessments = new TestResult(testDescription, stepResults, DateTime.UtcNow - t0);
+                TraceResult(testAssessments, consoleWriter, testSet);
+                testSet.PushResult(testAssessments);
             }
         }
 
-        private static TestResult Trace(TestResult testResult, ConsoleWriter consoleWriter)
+        private static TestResult TraceResult(TestResult testResult, ConsoleWriter consoleWriter, TestSet testSet)
         {
             var methodName = testResult.Description.MethodName;
             const int totalWidth = 60;
             var testStepResult = testResult.TestStepResult;
             methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
-            consoleWriter.WriteLine($"{methodName}: {testStepResult?.ResultCode ?? ResultCode.Success}");
+            var literalTime = GetLiteral(testResult.Duration);
+            var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
+            consoleWriter.WriteLine($"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {testStepResult?.ResultCode ?? ResultCode.Success} ({literalTime})");
             return testResult;
+        }
+
+        private static string GetLiteral(TimeSpan timeSpan)
+        {
+            var formatProvider = CultureInfo.InvariantCulture;
+
+            var milliseconds = (int)timeSpan.TotalMilliseconds;
+            if (milliseconds < 10000)
+                return milliseconds.ToString(formatProvider) + "ms";
+            var literal = timeSpan.Seconds.ToString(formatProvider) + "s";
+            var minutes = (int)timeSpan.TotalMinutes;
+            if (minutes > 0)
+                literal = minutes.ToString(formatProvider) + "mn" + literal;
+            return literal;
         }
 
         /// <summary>

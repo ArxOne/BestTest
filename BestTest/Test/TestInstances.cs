@@ -38,7 +38,7 @@ namespace BestTest.Test
         {
             if (result == null)
                 return null;
-            return new TestResult(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { result });
+            return new TestResult(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { result }, TimeSpan.Zero);
         }
 
         public TestInstance Get(TestDescription testDescription, out StepResult failure)
