@@ -7,9 +7,6 @@ skip_tags: true
 
 version: '{branch}-{build}'
 
-environment:
-  build_name: 'build {build}'
-
 os: Visual Studio 2017
 
 before_build:
@@ -23,7 +20,7 @@ build:
   verbosity: minimal
 
 deploy:
-  release: $(build_name)
+  release: 'build $(build)'
   description: 'Continuous build'
   provider: GitHub
   auth_token:
