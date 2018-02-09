@@ -3,6 +3,8 @@
 #  only:
 #    - master
 
+skip_tags: true
+
 version: '{branch}-{build}'
 
 os: Visual Studio 2017
@@ -18,12 +20,12 @@ build:
   verbosity: minimal
 
 deploy:
-  release: myproduct-v$(appveyor_build_version)
-  description: 'Release description'
+  release: 'build {build}'
+  description: 'Continuous build'
   provider: GitHub
   auth_token:
     secure: P78ZoBG1yAH9cAGEcoHYItaTTRm/FdrDAkzav1IuDh6uy+LiFd1ZSB6IwrUKPPSG
-  artifact: /.*\BestText.exe
+  artifact: /.*\BestTest.exe
   draft: false
   prerelease: false
   on:
