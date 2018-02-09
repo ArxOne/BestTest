@@ -138,12 +138,16 @@ namespace BestTest.Test
         [SeparateAppDomain]
         private TestResult[] Test(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
         {
-            var runners = CreateRunners(testSet, parameters, consoleWriter);
+            // when assemblies are isolated, they all run with the same instances (and in the same appdomain)
+            var testInstances = parameters.IsolateAssemblies ? new TestInstances() : null;
+            var runners = CreateRunners(testSet, parameters, consoleWriter, testInstances);
             Await(runners);
+            if (testInstances != null)
+                testSet.PushResults(testInstances.Cleanup());
             return testSet.Results;
         }
 
-        private IEnumerable<IEnumerable<TestDescription>> GroupDescriptions(IEnumerable<TestDescription> testDescriptions, TestParameters parameters)
+        private static IEnumerable<IEnumerable<TestDescription>> GroupDescriptions(IEnumerable<TestDescription> testDescriptions, TestParameters parameters)
         {
             if (parameters.IsolateAssemblies)
                 return testDescriptions.GroupBy(t => t.AssemblyName);
@@ -156,12 +160,19 @@ namespace BestTest.Test
         /// <param name="testSet">The test set.</param>
         /// <param name="parameters">The parameters.</param>
         /// <param name="consoleWriter">The output writer.</param>
+        /// <param name="testInstances">The test instances.</param>
         /// <returns></returns>
-        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
+        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances)
         {
             for (int runnerIndex = 0; runnerIndex < parameters.ParallelRuns; runnerIndex++)
             {
-                var thread = new Thread(delegate () { ParallelRunner(testSet, parameters, consoleWriter); });
+                var thread = new Thread(delegate ()
+                {
+                    if (testInstances != null)
+                        InlineParallelRunner(testSet, parameters, consoleWriter, testInstances);
+                    else
+                        SeparatedParallelRunner(testSet, parameters, consoleWriter);
+                });
                 thread.Start();
                 yield return thread;
             }
@@ -179,9 +190,15 @@ namespace BestTest.Test
         }
 
         [SeparateAppDomain]
-        private void ParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
+        private void SeparatedParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
         {
             var testInstances = new TestInstances();
+            InlineParallelRunner(testSet, parameters, consoleWriter, testInstances);
+            testSet.PushResults(testInstances.Cleanup());
+        }
+
+        private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances)
+        {
             for (; ; )
             {
                 var testDescription = testSet.PullNextTest();

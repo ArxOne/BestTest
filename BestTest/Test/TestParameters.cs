@@ -10,7 +10,7 @@ namespace BestTest.Test
     [Serializable]
     public class TestParameters
     {
-        public List<string> AssemblyPaths { get; set; } = new List<string>();
+        public List<string> AssemblyPaths { get; } = new List<string>();
 
         public int ParallelRuns { get; set; } = 1;
 

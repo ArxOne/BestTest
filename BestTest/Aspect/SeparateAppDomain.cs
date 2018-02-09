@@ -6,6 +6,7 @@ namespace BestTest.Aspect
 {
     using System;
     using System.Diagnostics;
+    using System.Threading;
     using ArxOne.MrAdvice.Advice;
 
     /// <summary>
@@ -30,11 +31,17 @@ namespace BestTest.Aspect
             }
             finally
             {
-                try
+                var unloadThread = new Thread(delegate ()
                 {
-                    AppDomain.Unload(appDomain);
-                }
-                catch { }
+                    try
+                    {
+                        AppDomain.Unload(appDomain);
+                    }
+                    catch
+                    {
+                    }
+                });
+                unloadThread.Start();
             }
         }
     }

@@ -18,7 +18,7 @@ namespace BestTest.Test
         public TestSet() { }
 
         private readonly Queue<TestDescription> _descriptions;
-        private readonly IList<TestResult> _results = new List<TestResult>();
+        private readonly List<TestResult> _results = new List<TestResult>();
 
         /// <summary>
         /// Gets the total tests count.
@@ -66,6 +66,12 @@ namespace BestTest.Test
         {
             lock (_results)
                 _results.Add(result);
+        }
+
+        public void PushResults(IEnumerable<TestResult> results)
+        {
+            lock (_results)
+                _results.AddRange(results);
         }
     }
 }
