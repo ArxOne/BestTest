@@ -19,12 +19,12 @@ namespace BestTest.Test
         public string ResultMessage { get; }
         public string Exception { get; }
 
-        public static readonly StepResult TestSuccess = new StepResult(TestStep.Test, ResultCode.Success, null);
+        public static readonly StepResult TestSuccess = new StepResult(TestStep.Test, ResultCode.Success, null, null);
 
         [Obsolete("Serialization-only ctor")]
         public StepResult() { }
 
-        public StepResult(TestStep step, ResultCode resultCode, Exception e)
+        public StepResult(TestStep step, ResultCode resultCode, Exception e, string output)
         {
             Step = step;
             ResultCode = resultCode;
@@ -36,26 +36,31 @@ namespace BestTest.Test
         {
             if (action == null)
                 return null;
-            try
+            using (var consoleCapture = new ConsoleCapture())
             {
-                action();
-                return null;
-            }
-            catch (TargetInvocationException e) when (step == TestStep.Test &&
-                                                      (e.InnerException.GetType().Name == "AssertInconclusiveException" || e.InnerException.GetType().Name == "InconclusiveException"))
-            {
-                return new StepResult(step, ResultCode.Inconclusive, e.InnerException);
-            }
-            catch (TargetInvocationException e) when (step == TestStep.Test &&
-                                                      (e.InnerException.GetType().Name == "AssertFailedException" || e.InnerException.GetType().Name == "FailedException"))
-            {
-                return new StepResult(step, ResultCode.Failure, e.InnerException);
-            }
-            catch (TargetInvocationException e)
-            {
-                if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider).Any(expectedType => expectedType.IsInstanceOfType(e.InnerException)))
+                try
+                {
+                    action();
                     return null;
-                return new StepResult(step, ResultCode.Failure, e.InnerException);
+                }
+                catch (TargetInvocationException e) when (step == TestStep.Test &&
+                                                          (e.InnerException.GetType().Name == "AssertInconclusiveException" ||
+                                                           e.InnerException.GetType().Name == "InconclusiveException"))
+                {
+                    return new StepResult(step, ResultCode.Inconclusive, e.InnerException, consoleCapture.Capture);
+                }
+                catch (TargetInvocationException e) when (step == TestStep.Test &&
+                                                          (e.InnerException.GetType().Name == "AssertFailedException" || e.InnerException.GetType().Name == "FailedException"))
+                {
+                    return new StepResult(step, ResultCode.Failure, e.InnerException, consoleCapture.Capture);
+                }
+                catch (TargetInvocationException e)
+                {
+                    if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider)
+                            .Any(expectedType => expectedType.IsInstanceOfType(e.InnerException)))
+                        return null;
+                    return new StepResult(step, ResultCode.Failure, e.InnerException, consoleCapture.Capture);
+                }
             }
         }
 

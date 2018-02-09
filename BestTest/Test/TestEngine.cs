@@ -190,8 +190,26 @@ namespace BestTest.Test
             methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
             var literalTime = GetLiteral(testResult.Duration);
             var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
-            consoleWriter.WriteLine($"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {testStepResult?.ResultCode ?? ResultCode.Success} ({literalTime})");
+            var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success);
+            consoleWriter.WriteLine($"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(10)})");
             return testResult;
+        }
+
+        private static string GetLiteral(ResultCode resultCode)
+        {
+            switch (resultCode)
+            {
+                case ResultCode.Success:
+                    return "OK";
+                case ResultCode.Inconclusive:
+                    return "Inconclusive";
+                case ResultCode.Failure:
+                    return "Failed";
+                case ResultCode.Timeout:
+                    return "Timed out";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(resultCode), resultCode, null);
+            }
         }
 
         private static string GetLiteral(TimeSpan timeSpan)
@@ -218,17 +236,21 @@ namespace BestTest.Test
         private IEnumerable<StepResult> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
         {
             // initialize test
-            TestInstance testInstance;
-            using (new ConsoleCapture())
-            {
-                testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
-                if (initializationFailureTestAssessment != null)
-                    yield return initializationFailureTestAssessment;
-            }
+            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
+            if (initializationFailureTestAssessment != null)
+                yield return initializationFailureTestAssessment;
 
             // run it
             StepResult[] stepResults = null;
-            var thread = new Thread(delegate () { stepResults = Test(testDescription, testInstance).ToArray(); });
+            string consoleOutput = null;
+            var thread = new Thread(delegate ()
+            {
+                using (var consoleCapture = new ConsoleCapture())
+                {
+                    stepResults = Test(testDescription, testInstance).ToArray();
+                    consoleOutput = consoleCapture.Capture;
+                }
+            });
             thread.Start();
             // wait for test
             if (thread.Join(parameters.Timeout)) // test ended in time
@@ -240,22 +262,19 @@ namespace BestTest.Test
 
             // in case it took too long, say it
             thread.Abort();
-            yield return new StepResult(TestStep.Test, ResultCode.Timeout, null);
+            yield return new StepResult(TestStep.Test, ResultCode.Timeout, null, consoleOutput);
         }
 
         private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance)
         {
-            using (new ConsoleCapture())
-            {
-                // if initializer fails, no need to run the test
-                var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
-                                     ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
-                                     ?? StepResult.TestSuccess;
-                yield return testAssessment;
-                var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
-                if (cleanupTestAssessment != null)
-                    yield return cleanupTestAssessment;
-            }
+            // if initializer fails, no need to run the test
+            var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
+                                 ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
+                                 ?? StepResult.TestSuccess;
+            yield return testAssessment;
+            var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
+            if (cleanupTestAssessment != null)
+                yield return cleanupTestAssessment;
         }
     }
 }

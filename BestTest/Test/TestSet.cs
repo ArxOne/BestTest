@@ -19,7 +19,7 @@ namespace BestTest.Test
 
         private readonly Queue<TestDescription> _descriptions;
         private readonly IList<TestResult> _results = new List<TestResult>();
-        
+
         /// <summary>
         /// Gets the total tests count.
         /// </summary>

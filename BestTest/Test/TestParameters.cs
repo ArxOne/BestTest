@@ -17,5 +17,7 @@ namespace BestTest.Test
         public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(5);
 
         public bool InconclusiveAsError { get; set; } = true;
+
+        public bool IsolateAssemblies { get; set; } = true;
     }
 }
