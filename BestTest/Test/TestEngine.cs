@@ -15,8 +15,6 @@ namespace BestTest.Test
 
     public class TestEngine : MarshalByRefObject
     {
-        private static readonly object[] NoParameter = new object[0];
-
         public int Run(TestParameters testParameters)
         {
             Test(testParameters);
@@ -68,36 +66,43 @@ namespace BestTest.Test
         {
             foreach (var testType in assembly.GetTypes().Where(IsTestClass))
             {
-                MethodInfo assemblyInitialize = null, assemblyCleanup = null, classInitialize = null, classCleanup = null, testInitialize = null, testCleanup = null;
-                foreach (var method in testType.GetMethods())
+                foreach (var testDescription in EnumerateTests(assembly, testType))
+                    yield return testDescription;
+            }
+        }
+
+        private static IEnumerable<TestDescription> EnumerateTests(Assembly assembly, Type testType)
+        {
+            MethodInfo assemblyInitialize = null, assemblyCleanup = null, classInitialize = null, classCleanup = null, testInitialize = null, testCleanup = null;
+            foreach (var method in testType.GetMethods())
+            {
+                if (!method.IsValidTestMethod())
+                    continue;
+                // static methods only allowed in assembly manipulation
+                if (method.IsStatic)
                 {
-                    if (!method.IsValidTestMethod())
-                        continue;
-                    // static methods only allowed in assembly manipulation
-                    if (method.IsStatic)
-                    {
-                        if (method.HasAnyAttribute("AssemblyInitialize"))
-                            assemblyInitialize = method;
-                        if (method.HasAnyAttribute("AssemblyCleanup"))
-                            assemblyCleanup = method;
-                    }
-                    else
-                    {
-                        if (method.HasAnyAttribute("TestInitialize"))
-                            testInitialize = method;
-                        if (method.HasAnyAttribute("TestCleanup"))
-                            testCleanup = method;
-                    }
-                    // class methods apparently can be both (mother fuckers!)
-                    if (method.HasAnyAttribute("ClassInitialize"))
-                        classInitialize = method;
-                    if (method.HasAnyAttribute("ClassCleanup"))
-                        classCleanup = method;
+                    if (method.HasAnyAttribute("AssemblyInitialize"))
+                        assemblyInitialize = method;
+                    if (method.HasAnyAttribute("AssemblyCleanup"))
+                        assemblyCleanup = method;
+                }
+                else
+                {
+                    if (method.HasAnyAttribute("TestInitialize"))
+                        testInitialize = method;
+                    if (method.HasAnyAttribute("TestCleanup"))
+                        testCleanup = method;
                 }
 
-                foreach (var testMethod in testType.GetMethods().Where(t => IsTestMethod(t) && !t.IsStatic))
-                    yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup);
+                // class methods apparently can be both (mother fuckers!)
+                if (method.HasAnyAttribute("ClassInitialize"))
+                    classInitialize = method;
+                if (method.HasAnyAttribute("ClassCleanup"))
+                    classCleanup = method;
             }
+
+            foreach (var testMethod in testType.GetMethods().Where(t => IsTestMethod(t) && !t.IsStatic))
+                yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup);
         }
 
         private static bool IsTestClass(Type type) => type.IsValidTestType() && type.HasAnyAttribute("TestClass", "TestFixture");
@@ -107,12 +112,47 @@ namespace BestTest.Test
         public void Test(TestParameters parameters)
         {
             var tests = EnumerateTests(parameters);
-            var instances = new TestInstances();
-            var assessments = new List<TestAssessments>();
-            assessments.AddRange(tests
-                //.AsParallel().WithDegreeOfParallelism(parameters.ParallelRuns)
-                .Select(t => Trace(new TestAssessments(t, Test(t, instances, parameters)))));
-            instances.Cleanup();
+            var testSet = new TestSet(tests);
+            var runners = CreateRunners(testSet, parameters);
+            Await(runners);
+        }
+
+        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters)
+        {
+            for (int runnerIndex = 0; runnerIndex < parameters.ParallelRuns; runnerIndex++)
+            {
+                var thread = new Thread(delegate () { ParallelRunner(testSet, parameters); });
+                thread.Start();
+                yield return thread;
+            }
+        }
+
+        private void Await(IEnumerable<Thread> threads)
+        {
+            var allThreads = threads.ToArray();
+            for (; ; )
+            {
+                if (allThreads.All(t => !t.IsAlive))
+                    return;
+                Thread.Sleep(100);
+            }
+        }
+
+        [SeparateAppDomain]
+        private void ParallelRunner(TestSet testSet, TestParameters parameters)
+        {
+            var testInstances = new TestInstances();
+            for (; ; )
+            {
+                var testDescription = testSet.PullNextTest();
+                if (testDescription == null)
+                    break;
+
+                var assessment = Test(testDescription, testInstances, parameters);
+                var testAssessments = new TestAssessments(testDescription, assessment);
+                Trace(testAssessments);
+                testSet.PushAssessment(testAssessments);
+            }
         }
 
         private static TestAssessments Trace(TestAssessments testAssessments)

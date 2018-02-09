@@ -55,6 +55,7 @@
     <Compile Include="Test\TestInstances.cs" />
     <Compile Include="Test\TestParameters.cs" />
     <Compile Include="Test\TestResult.cs" />
+    <Compile Include="Test\TestSet.cs" />
     <Compile Include="Test\TestStep.cs" />
   </ItemGroup>
   <ItemGroup>

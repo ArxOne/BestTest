@@ -4,9 +4,11 @@
 
 namespace BestTest.Test
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
 
+    [Serializable]
     public class TestAssessments
     {
         public TestDescription Description { get; }

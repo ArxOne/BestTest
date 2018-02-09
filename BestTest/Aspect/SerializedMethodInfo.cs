@@ -81,8 +81,7 @@ namespace BestTest.Aspect
         /// <returns></returns>
         private static MethodInfo GetMethod(MethodDescriptor methodDescriptor)
         {
-            // a public test method has 0 parameters, remember?
-            var method = GetType(methodDescriptor).GetMethod(methodDescriptor.MethodName, new Type[0]);
+            var method = GetType(methodDescriptor).GetMethod(methodDescriptor.MethodName);
             return method;
         }
 

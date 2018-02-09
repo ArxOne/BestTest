@@ -8,19 +8,20 @@ namespace BestTest.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [Serializable]
     public class TestAssessment
     {
         private static readonly object[] NoParameter = new object[0];
 
-        public TestStep Step;
-        public TestResult Result;
-        public string ResultMessage;
-        public string Exception;
+        public TestStep Step { get; }
+        public TestResult Result { get; }
+        public string ResultMessage { get; }
+        public string Exception { get; }
 
-        public static readonly TestAssessment TestSuccess = new TestAssessment { Step = TestStep.Test, Result = TestResult.Success };
+        public static readonly TestAssessment TestSuccess = new TestAssessment(TestStep.Test, TestResult.Success, null);
 
+        [Obsolete("Serialization-only ctor")]
         public TestAssessment() { }
 
         public TestAssessment(TestStep step, TestResult result, Exception e)

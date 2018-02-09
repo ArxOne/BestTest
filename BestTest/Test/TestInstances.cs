@@ -34,7 +34,7 @@ namespace BestTest.Test
                 yield return CreateTestsAssessments(cleanup, TestAssessment.Invoke(cleanup, TestStep.AssemblyCleanup, null));
         }
 
-        private TestAssessments CreateTestsAssessments(MethodInfo method, TestAssessment assessment)
+        private static TestAssessments CreateTestsAssessments(MethodInfo method, TestAssessment assessment)
         {
             if (assessment == null)
                 return null;
@@ -87,7 +87,7 @@ namespace BestTest.Test
             }
         }
 
-        private void SetTestContext(object instance, ITestContext context)
+        private static void SetTestContext(object instance, ITestContext context)
         {
             var contextPropetyInfo = instance.GetType().GetProperty("TestContext");
             if (contextPropetyInfo == null)
