@@ -15,19 +15,19 @@ namespace BestTest.Test
         private static readonly object[] NoParameter = new object[0];
 
         public TestStep Step { get; }
-        public TestResult Result { get; }
+        public TestResultCode ResultCode { get; }
         public string ResultMessage { get; }
         public string Exception { get; }
 
-        public static readonly TestAssessment TestSuccess = new TestAssessment(TestStep.Test, TestResult.Success, null);
+        public static readonly TestAssessment TestSuccess = new TestAssessment(TestStep.Test, TestResultCode.Success, null);
 
         [Obsolete("Serialization-only ctor")]
         public TestAssessment() { }
 
-        public TestAssessment(TestStep step, TestResult result, Exception e)
+        public TestAssessment(TestStep step, TestResultCode resultCode, Exception e)
         {
             Step = step;
-            Result = result;
+            ResultCode = resultCode;
             ResultMessage = e?.Message;
             Exception = e?.ToString();
         }
@@ -43,17 +43,17 @@ namespace BestTest.Test
             }
             catch (TargetInvocationException e) when (step == TestStep.Test && e.InnerException.GetType().Name == "AssertInconclusiveException")
             {
-                return new TestAssessment(step, TestResult.Inconclusive, e.InnerException);
+                return new TestAssessment(step, TestResultCode.Inconclusive, e.InnerException);
             }
             catch (TargetInvocationException e) when (step == TestStep.Test && e.InnerException.GetType().Name == "AssertFailedException")
             {
-                return new TestAssessment(step, TestResult.Failure, e.InnerException);
+                return new TestAssessment(step, TestResultCode.Failure, e.InnerException);
             }
             catch (TargetInvocationException e)
             {
                 if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider).Any(expectedType => expectedType == e.InnerException.GetType()))
                     return null;
-                return new TestAssessment(step, TestResult.Failure, e.InnerException);
+                return new TestAssessment(step, TestResultCode.Failure, e.InnerException);
             }
         }
 

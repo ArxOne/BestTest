@@ -13,7 +13,7 @@ namespace BestTest.Test
     {
         public TestDescription Description { get; }
         public IList<TestAssessment> Assessments { get; }
-        public TestResult Result => Assessments.Last().Result;
+        public TestResultCode ResultCode => Assessments.Last().ResultCode;
         public TestAssessment TestStepAssessment => Assessments.SingleOrDefault(a => a.Step == TestStep.Test);
 
         /// <summary>

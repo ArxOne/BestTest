@@ -161,7 +161,7 @@ namespace BestTest.Test
             const int totalWidth = 60;
             var testAssessment = testAssessments.TestStepAssessment;
             methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
-            Console.WriteLine($"{methodName}: {testAssessment?.Result ?? TestResult.Success} ({testAssessment?.Exception})");
+            Console.WriteLine($"{methodName}: {testAssessment?.ResultCode ?? TestResultCode.Success} ({testAssessment?.Exception})");
             return testAssessments;
         }
 
@@ -193,7 +193,7 @@ namespace BestTest.Test
 
             // in case it took too long, say it
             thread.Abort();
-            yield return new TestAssessment(TestStep.Test, TestResult.Timeout, null);
+            yield return new TestAssessment(TestStep.Test, TestResultCode.Timeout, null);
         }
 
         private static IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstance testInstance)
