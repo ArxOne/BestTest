@@ -10,7 +10,7 @@ namespace BestTest.Test
     using System.Reflection;
 
     [Serializable]
-    public class TestAssessment
+    public class TestResult
     {
         private static readonly object[] NoParameter = new object[0];
 
@@ -19,12 +19,12 @@ namespace BestTest.Test
         public string ResultMessage { get; }
         public string Exception { get; }
 
-        public static readonly TestAssessment TestSuccess = new TestAssessment(TestStep.Test, TestResultCode.Success, null);
+        public static readonly TestResult TestSuccess = new TestResult(TestStep.Test, TestResultCode.Success, null);
 
         [Obsolete("Serialization-only ctor")]
-        public TestAssessment() { }
+        public TestResult() { }
 
-        public TestAssessment(TestStep step, TestResultCode resultCode, Exception e)
+        public TestResult(TestStep step, TestResultCode resultCode, Exception e)
         {
             Step = step;
             ResultCode = resultCode;
@@ -32,7 +32,7 @@ namespace BestTest.Test
             Exception = e?.ToString();
         }
 
-        private static TestAssessment Invoke(Action action, TestStep step, ICustomAttributeProvider expectedExceptionsAttributeProvider)
+        private static TestResult Invoke(Action action, TestStep step, ICustomAttributeProvider expectedExceptionsAttributeProvider)
         {
             if (action == null)
                 return null;
@@ -41,19 +41,21 @@ namespace BestTest.Test
                 action();
                 return null;
             }
-            catch (TargetInvocationException e) when (step == TestStep.Test && e.InnerException.GetType().Name == "AssertInconclusiveException")
+            catch (TargetInvocationException e) when (step == TestStep.Test &&
+                                                      (e.InnerException.GetType().Name == "AssertInconclusiveException" || e.InnerException.GetType().Name == "InconclusiveException"))
             {
-                return new TestAssessment(step, TestResultCode.Inconclusive, e.InnerException);
+                return new TestResult(step, TestResultCode.Inconclusive, e.InnerException);
             }
-            catch (TargetInvocationException e) when (step == TestStep.Test && e.InnerException.GetType().Name == "AssertFailedException")
+            catch (TargetInvocationException e) when (step == TestStep.Test &&
+                                                      (e.InnerException.GetType().Name == "AssertFailedException" || e.InnerException.GetType().Name == "FailedException"))
             {
-                return new TestAssessment(step, TestResultCode.Failure, e.InnerException);
+                return new TestResult(step, TestResultCode.Failure, e.InnerException);
             }
             catch (TargetInvocationException e)
             {
                 if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider).Any(expectedType => expectedType == e.InnerException.GetType()))
                     return null;
-                return new TestAssessment(step, TestResultCode.Failure, e.InnerException);
+                return new TestResult(step, TestResultCode.Failure, e.InnerException);
             }
         }
 
@@ -63,7 +65,7 @@ namespace BestTest.Test
         /// <param name="action">The action.</param>
         /// <param name="step">The step.</param>
         /// <returns>An assessment on failure, null on success</returns>
-        public static TestAssessment Invoke(Action action, TestStep step) => Invoke(action, step, null);
+        public static TestResult Get(Action action, TestStep step) => Invoke(action, step, null);
 
         /// <summary>
         /// Invokes the specified method.
@@ -75,7 +77,7 @@ namespace BestTest.Test
         /// <returns>
         /// An assessment on failure, null on success
         /// </returns>
-        public static TestAssessment Invoke(MethodInfo method, TestStep step, object instance, object parameter = null)
+        public static TestResult Get(MethodInfo method, TestStep step, object instance, object parameter = null)
         {
             if (method == null)
                 return null;

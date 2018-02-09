@@ -10,7 +10,7 @@ namespace BestTest.Test
 
         public ITestContext Context;
 
-        public TestAssessment ClassInitializeFailure;
-        public TestAssessment AssemblyInitializeFailure;
+        public TestResult ClassInitializeFailure;
+        public TestResult AssemblyInitializeFailure;
     }
 }

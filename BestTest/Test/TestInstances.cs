@@ -29,19 +29,19 @@ namespace BestTest.Test
         private IEnumerable<TestAssessments> DoCleanup()
         {
             foreach (var cleanup in _classCleanup)
-                yield return CreateTestsAssessments(cleanup.Item2, TestAssessment.Invoke(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
+                yield return CreateTestsAssessments(cleanup.Item2, TestResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
             foreach (var cleanup in _assemblyCleanup)
-                yield return CreateTestsAssessments(cleanup, TestAssessment.Invoke(cleanup, TestStep.AssemblyCleanup, null));
+                yield return CreateTestsAssessments(cleanup, TestResult.Get(cleanup, TestStep.AssemblyCleanup, null));
         }
 
-        private static TestAssessments CreateTestsAssessments(MethodInfo method, TestAssessment assessment)
+        private static TestAssessments CreateTestsAssessments(MethodInfo method, TestResult result)
         {
-            if (assessment == null)
+            if (result == null)
                 return null;
-            return new TestAssessments(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { assessment });
+            return new TestAssessments(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { result });
         }
 
-        public TestInstance Get(TestDescription testDescription, out TestAssessment failure)
+        public TestInstance Get(TestDescription testDescription, out TestResult failure)
         {
             lock (_testInstances)
             {
@@ -65,7 +65,7 @@ namespace BestTest.Test
                 if (assemblyIsNew)
                 {
                     _assemblies.Add(assemblyFullName);
-                    testInstance.AssemblyInitializeFailure = failure = TestAssessment.Invoke(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null);
+                    testInstance.AssemblyInitializeFailure = failure = TestResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null);
                     if (failure != null)
                         return null;
                     // cleanup only once setup has succeeded
@@ -74,9 +74,9 @@ namespace BestTest.Test
 
                 // and initialize the type
                 testInstance.ClassInitializeFailure = failure =
-                    TestAssessment.Invoke(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
-                    ?? TestAssessment.Invoke(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
-                    ?? TestAssessment.Invoke(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
+                    TestResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
+                    ?? TestResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
+                    ?? TestResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
                 if (failure != null)
                     return null;
 

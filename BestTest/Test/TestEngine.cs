@@ -111,23 +111,31 @@ namespace BestTest.Test
         [SeparateAppDomain]
         public void Test(TestParameters parameters)
         {
+            var consoleWriter = new ConsoleWriter(Console.Out);
             var tests = EnumerateTests(parameters);
             var testSet = new TestSet(tests);
-            var runners = CreateRunners(testSet, parameters);
+            var runners = CreateRunners(testSet, parameters, consoleWriter);
             Await(runners);
         }
 
-        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters)
+        /// <summary>
+        /// Creates the runners (whose count depends on /m parameter).
+        /// </summary>
+        /// <param name="testSet">The test set.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="consoleWriter">The output writer.</param>
+        /// <returns></returns>
+        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
         {
             for (int runnerIndex = 0; runnerIndex < parameters.ParallelRuns; runnerIndex++)
             {
-                var thread = new Thread(delegate () { ParallelRunner(testSet, parameters); });
+                var thread = new Thread(delegate () { ParallelRunner(testSet, parameters, consoleWriter); });
                 thread.Start();
                 yield return thread;
             }
         }
 
-        private void Await(IEnumerable<Thread> threads)
+        private static void Await(IEnumerable<Thread> threads)
         {
             var allThreads = threads.ToArray();
             for (; ; )
@@ -139,7 +147,7 @@ namespace BestTest.Test
         }
 
         [SeparateAppDomain]
-        private void ParallelRunner(TestSet testSet, TestParameters parameters)
+        private void ParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
         {
             var testInstances = new TestInstances();
             for (; ; )
@@ -150,18 +158,18 @@ namespace BestTest.Test
 
                 var assessment = Test(testDescription, testInstances, parameters);
                 var testAssessments = new TestAssessments(testDescription, assessment);
-                Trace(testAssessments);
+                Trace(testAssessments, consoleWriter);
                 testSet.PushAssessment(testAssessments);
             }
         }
 
-        private static TestAssessments Trace(TestAssessments testAssessments)
+        private static TestAssessments Trace(TestAssessments testAssessments, ConsoleWriter consoleWriter)
         {
             var methodName = testAssessments.Description.MethodName;
             const int totalWidth = 60;
-            var testAssessment = testAssessments.TestStepAssessment;
+            var testAssessment = testAssessments.TestStepResult;
             methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
-            Console.WriteLine($"{methodName}: {testAssessment?.ResultCode ?? TestResultCode.Success} ({testAssessment?.Exception})");
+            consoleWriter.WriteLine($"{methodName}: {testAssessment?.ResultCode ?? TestResultCode.Success}");
             return testAssessments;
         }
 
@@ -171,41 +179,48 @@ namespace BestTest.Test
         /// <param name="testDescription">The test description.</param>
         /// <param name="testInstances">The test instances.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <returns>A list of <see cref="TestAssessment"/>. The last of them indicates overall success. Multiple assessments will give details</returns>
-        private IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
+        /// <returns>A list of <see cref="TestResult"/>. The last of them indicates overall success. Multiple assessments will give details</returns>
+        private IEnumerable<TestResult> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
         {
             // initialize test
-            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
-            if (initializationFailureTestAssessment != null)
-                yield return initializationFailureTestAssessment;
+            TestInstance testInstance;
+            using (new ConsoleCapture())
+            {
+                testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
+                if (initializationFailureTestAssessment != null)
+                    yield return initializationFailureTestAssessment;
+            }
 
             // run it
-            TestAssessment[] testAssessments = null;
-            var thread = new Thread(delegate () { testAssessments = Test(testDescription, testInstance).ToArray(); });
+            TestResult[] testResults = null;
+            var thread = new Thread(delegate () { testResults = Test(testDescription, testInstance).ToArray(); });
             thread.Start();
             // wait for test
             if (thread.Join(parameters.Timeout)) // test ended in time
             {
-                foreach (var testAssessment in testAssessments)
+                foreach (var testAssessment in testResults)
                     yield return testAssessment;
                 yield break;
             }
 
             // in case it took too long, say it
             thread.Abort();
-            yield return new TestAssessment(TestStep.Test, TestResultCode.Timeout, null);
+            yield return new TestResult(TestStep.Test, TestResultCode.Timeout, null);
         }
 
-        private static IEnumerable<TestAssessment> Test(TestDescription testDescription, TestInstance testInstance)
+        private static IEnumerable<TestResult> Test(TestDescription testDescription, TestInstance testInstance)
         {
-            // if initializer fails, no need to run the test
-            var testAssessment = TestAssessment.Invoke(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
-                                 ?? TestAssessment.Invoke(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
-                                 ?? TestAssessment.TestSuccess;
-            yield return testAssessment;
-            var cleanupTestAssessment = TestAssessment.Invoke(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
-            if (cleanupTestAssessment != null)
-                yield return cleanupTestAssessment;
+            using (new ConsoleCapture())
+            {
+                // if initializer fails, no need to run the test
+                var testAssessment = TestResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
+                                     ?? TestResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
+                                     ?? TestResult.TestSuccess;
+                yield return testAssessment;
+                var cleanupTestAssessment = TestResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
+                if (cleanupTestAssessment != null)
+                    yield return cleanupTestAssessment;
+            }
         }
     }
 }
