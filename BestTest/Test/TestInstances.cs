@@ -20,14 +20,25 @@ namespace BestTest.Test
         private readonly IList<Tuple<object, MethodInfo, object>> _classCleanup = new List<Tuple<object, MethodInfo, object>>();
         private readonly IList<MethodInfo> _assemblyCleanup = new List<MethodInfo>();
 
-        public TestAssessment[] Cleanup() => DoCleanup().Where(a => a != null).ToArray();
+        /// <summary>
+        /// Runs all pending cleanup methods.
+        /// </summary>
+        /// <returns></returns>
+        public TestAssessments[] Cleanup() => DoCleanup().Where(a => a != null).ToArray();
 
-        private IEnumerable<TestAssessment> DoCleanup()
+        private IEnumerable<TestAssessments> DoCleanup()
         {
             foreach (var cleanup in _classCleanup)
-                yield return TestAssessment.Invoke(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3);
+                yield return CreateTestsAssessments(cleanup.Item2, TestAssessment.Invoke(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
             foreach (var cleanup in _assemblyCleanup)
-                yield return TestAssessment.Invoke(cleanup, TestStep.AssemblyCleanup, null);
+                yield return CreateTestsAssessments(cleanup, TestAssessment.Invoke(cleanup, TestStep.AssemblyCleanup, null));
+        }
+
+        private TestAssessments CreateTestsAssessments(MethodInfo method, TestAssessment assessment)
+        {
+            if (assessment == null)
+                return null;
+            return new TestAssessments(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { assessment });
         }
 
         public TestInstance Get(TestDescription testDescription, out TestAssessment failure)
