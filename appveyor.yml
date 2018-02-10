@@ -5,9 +5,11 @@ version: '{branch}-{build}'
 
 os: Visual Studio 2017
 
+install:
+  - cmd: call BestTest\Properties\Version.bat
+
 before_build:
   nuget restore
-  - cmd: call BestTest\Properties\Version.bat
 
 configuration: Release
 platform: Any CPU
