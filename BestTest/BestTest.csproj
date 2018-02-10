@@ -36,6 +36,12 @@
   <PropertyGroup>
     <ApplicationIcon>Properties\BestTest.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Properties\BestTest.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -69,6 +75,7 @@
     <Compile Include="Test\TestStep.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Properties\BestTest.snk" />
     <None Include="Blobber" />
     <Content Include="Properties\ProductVersion.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
