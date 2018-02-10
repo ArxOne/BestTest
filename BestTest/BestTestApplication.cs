@@ -19,6 +19,7 @@ namespace BestTest
             // these variables will be set when the command line is parsed
             var shouldShowHelp = false;
             bool showLogo = true;
+            bool checkForUpdates = true;
 
             // https://github.com/xamarin/XamarinComponents/tree/master/XPlat/Mono.Options
             var options = new OptionSet
@@ -30,6 +31,7 @@ namespace BestTest
                 {"ai|noassemblyisolation", _ => testParameters.IsolateAssemblies = false},
                 {"is|inconclusiveassucceeded", _ => testParameters.InconclusiveAsError = false},
                 {"t|timeout=", (TimeSpan t) => testParameters.Timeout = t},
+                {"nu|noupdatecheck", "Does not check for updates", _ => checkForUpdates= false},
                 {"nologo", "Hides header", _ => showLogo = false},
                 {"h|help", "show this message and exit", _ => shouldShowHelp = true},
             };
@@ -65,7 +67,8 @@ namespace BestTest
 
             var consoleOut = Console.Out;
             var updater = new Updater();
-            updater.StartCheck();
+            if (checkForUpdates)
+                updater.StartCheck();
 
             var testEngine = new TestEngine();
             var resultCode = testEngine.Run(testParameters);
