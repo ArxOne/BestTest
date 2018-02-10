@@ -21,7 +21,7 @@ build:
 
 artifacts:
   - path: BestTest\bin\$(configuration)\BestTest.exe
-    name: BestTest.exe
+#    name: BestTest.exe
 
 deploy:
   release: build$(APPVEYOR_BUILD_NUMBER)
