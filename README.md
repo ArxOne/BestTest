@@ -1,5 +1,5 @@
 # BestTest
-A smart replacement to the old, decaying mstest ;)
+A (hopefully) smart replacement to the old, decaying `mstest` :broken_heart:
 
 ## Where to get it
 
