@@ -62,8 +62,17 @@ namespace BestTest
             if (showLogo)
                 WriteHeader();
 
+            var consoleOut = Console.Out;
+            var updater = new Updater();
+            updater.StartCheck();
+
             var testEngine = new TestEngine();
-            return testEngine.Run(testParameters);
+            var resultCode = testEngine.Run(testParameters);
+
+            if (updater.HasUpdate)
+                consoleOut.WriteLine($"A new version {updater.OnlineVersion} is available at {updater.OnlineVersionUri}");
+
+            return resultCode;
         }
 
         private static void WriteHeader()
