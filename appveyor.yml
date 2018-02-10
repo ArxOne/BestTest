@@ -23,7 +23,7 @@ artifacts:
 
 deploy:
 #  release: build$(APPVEYOR_BUILD_NUMBER)
-  release: %ProductVersion%
+  release: '%ProductVersion%'
   description: 'Continuous build'
   provider: GitHub
   auth_token:
