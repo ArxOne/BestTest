@@ -3,14 +3,14 @@ A smart replacement to the old, decaying mstest ;)
 
 ## Where to get it
 
-Latest release is [here](https://github.com/ArxOne/BestTest/releases/latest)
+Latest release is [here](https://github.com/ArxOne/BestTest/releases/latest).
 
 ## How to use it
 
 ```cmd
 besttest [<options>] <assembly1spec> {<assembly2spec>...<assemblyNspec>}
 ```
-Assemblies can be specified by wildcard (`*Test.dll` for example)
+Assemblies can be specified by wildcard (`*Test.dll` for example).
 
 ## Current features
 
@@ -18,3 +18,11 @@ Assemblies can be specified by wildcard (`*Test.dll` for example)
 * Tests are isolated by assembly (this can be disabled)
 * Inconclusive tests can be considered as succeeded
 * Test timeout can be changed (defaults to 5mn)
+
+## Planned features
+
+Visit the [issues pages](https://github.com/ArxOne/BestTest/issues) to see what's going on and suggest.
+
+## Any help welcome
+
+As usual!
