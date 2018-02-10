@@ -12,7 +12,7 @@ var PreVersion = "";
 
 var Title = "BestTest";
 var Company = "Arx One";
-var LicenseUrl = "https://opensource.org/licenses/MIT";
+var LicenseUrl = "MIT (https://github.com/ArxOne/BestTest/blob/master/LICENSE)";
 var Description = "Run unit tests (MSTests format)";
 
 #>
