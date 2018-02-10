@@ -1,6 +1,10 @@
 # BestTest
 A smart replacement to the old, decaying mstest ;)
 
+## Where to get it
+
+Latest release is [here](https://github.com/ArxOne/BestTest/releases/latest)
+
 ## How to use it
 
 ```cmd
