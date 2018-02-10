@@ -65,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Blobber" />
+    <None Include="Properties\Version.bat" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Blobber">
