@@ -1,0 +1,15 @@
+﻿<#
+// this file is used by .tt generator
+
+var VersionMajor = "0";
+var VersionMinor = "2";
+var VersionPatch = "1";
+var Version = VersionMajor + "." + VersionMinor + "." + VersionPatch;
+var PreVersion = "";
+
+var Title = "BestTest";
+var Company = "Arx One";
+var LicenseUrl = "https://opensource.org/licenses/MIT";
+var Description = "Run unit tests (MSTests format)";
+
+#>

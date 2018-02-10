@@ -6,7 +6,7 @@ version: '{branch}-{build}'
 os: Visual Studio 2017
 
 install:
-  - cmd: call BestTest\Properties\Version.bat
+  - cmd: call BestTest\Properties\ProductVersion.bat
 
 before_build:
   nuget restore
@@ -22,9 +22,8 @@ artifacts:
   - path: BestTest\bin\$(configuration)\BestTest.exe
 
 deploy:
-#  release: build$(APPVEYOR_BUILD_NUMBER)
-  release: '%ProductVersion%'
-  description: 'Continuous build'
+  release: '%ProductName% %ProductVersion%'
+  description: '%ProductDescription%'
   provider: GitHub
   auth_token:
     secure: P78ZoBG1yAH9cAGEcoHYItaTTRm/FdrDAkzav1IuDh6uy+LiFd1ZSB6IwrUKPPSG
@@ -32,4 +31,3 @@ deploy:
   prerelease: false
   on:
     branch: master                 # release from master branch only
-#    appveyor_repo_tag: true        # deploy on tag push only
