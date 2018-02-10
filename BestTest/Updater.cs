@@ -10,6 +10,7 @@ namespace BestTest
     using System.Reflection;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using Reflection;
 
     public class Updater
     {
@@ -50,8 +51,7 @@ namespace BestTest
                             {
                                 if (Version.TryParse(match.Groups["version"].Value, out var onlineVersion))
                                 {
-                                    var currentVersion = Version.Parse(((AssemblyFileVersionAttribute)GetType().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute))).Version);
-                                    if (currentVersion <= onlineVersion)
+                                    if (AssemblyReflection.FileVersion <= onlineVersion)
                                         return;
 
                                     var latestVersionDirectDownload = new Uri($"https://github.com/ArxOne/BestTest/releases/download/BestTest-{onlineVersion}/BestTest.exe");

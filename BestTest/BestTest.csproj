@@ -61,6 +61,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>ProductInfo.tt</DependentUpon>
     </Compile>
+    <Compile Include="Reflection\AssemblyReflection.cs" />
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Test\ConsoleCapture.cs" />
     <Compile Include="Test\ConsoleWriter.cs" />

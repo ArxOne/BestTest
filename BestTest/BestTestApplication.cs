@@ -7,6 +7,7 @@ namespace BestTest
     using System;
     using System.IO;
     using Mono.Options;
+    using Reflection;
     using Test;
 
     public static class BestTestApplication
@@ -77,8 +78,8 @@ namespace BestTest
 
         private static void WriteHeader()
         {
-            Console.WriteLine("BestTest - A(nother) test engine with great expectations (as usual)");
-            Console.WriteLine("-------------------------------------------------------------------");
+            var title = $"BestTest {AssemblyReflection.FileVersion}";
+            Console.WriteLine(title);
             Console.WriteLine();
         }
     }
