@@ -27,7 +27,7 @@ deploy:
     secure: P78ZoBG1yAH9cAGEcoHYItaTTRm/FdrDAkzav1IuDh6uy+LiFd1ZSB6IwrUKPPSG
   artifacts:
     - path: BestTest\bin\$(configuration)\BestTest.exe
-	- name: BestTest.exe
+    - name: BestTest.exe
   draft: false
   prerelease: false
   on:
