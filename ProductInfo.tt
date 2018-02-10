@@ -4,11 +4,7 @@
 // 1. The ProductInfo.cs used by all assemblies
 // 2. The ProductionVersion.bat used by AppVeyor build
 
-var VersionMajor = "0";
-var VersionMinor = "2";
-var VersionPatch = "1";
-var Version = VersionMajor + "." + VersionMinor + "." + VersionPatch;
-var PreVersion = "";
+var Version = "0.2.1";
 
 var Title = "BestTest";
 var Company = "Arx One";
