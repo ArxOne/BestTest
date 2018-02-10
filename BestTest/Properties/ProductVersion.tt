@@ -1,6 +1,6 @@
 <#@ template debug="false" hostspecific="false" language="C#" #>
 <#@ output extension=".bat" #>
-<#@ include file="..\..\ProductInfo" #>
+<#@ include file="..\..\ProductInfo.tt" #>
 
 set ProductName=<#=Title#>
 set ProductVersion=<#=Version#>
