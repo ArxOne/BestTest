@@ -6,7 +6,7 @@ version: '{branch}-{build}'
 os: Visual Studio 2017
 
 install:
-  - cmd: call BestTest\Properties\ProductVersion.bat
+  - cmd: call BestTest\Properties\ProductVersion.bat # That one is generated when BestTest is built
 
 before_build:
   nuget restore
@@ -30,4 +30,5 @@ deploy:
   draft: false
   prerelease: false
   on:
-    branch: master                 # release from master branch only
+    branch: master
+

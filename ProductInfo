@@ -1,5 +1,8 @@
 ﻿<#
 // this file is used by .tt generator
+// it generates two files:
+// 1. The ProductInfo.cs used by all assemblies
+// 2. The ProductionVersion.bat used by AppVeyor build
 
 var VersionMajor = "0";
 var VersionMinor = "2";
