@@ -1,5 +1,5 @@
 <#@ template debug="false" hostspecific="false" #>
-<#@ output extension=".bat" #>
+<#@ output extension=".bat" encoding="us-ascii" #>
 <#@ include file="..\..\ProductInfo.tt" #>
 set ProductName=<#=Title#>
 set ProductVersion=<#=Version#>
