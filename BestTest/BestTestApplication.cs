@@ -28,10 +28,19 @@ namespace BestTest
                     "m|maxcpucount:", "Specifies the maximum number of concurrent processes to use when building",
                     (int? v) => testParameters.ParallelRuns = v ?? Environment.ProcessorCount
                 },
-                {"ai|noassemblyisolation", _ => testParameters.IsolateAssemblies = false},
-                {"is|inconclusiveassucceeded", _ => testParameters.InconclusiveAsError = false},
-                {"t|timeout=", (TimeSpan t) => testParameters.Timeout = t},
-                {"nu|noupdatecheck", "Does not check for updates", _ => checkForUpdates= false},
+                {
+                    "v|verbosity:", @"Specifies verbosity level:
+Q[uiet]:      nothing is shown
+M[inimal]:    assessment is displayed
+N[ormal]:     show tests list and result
+D[etailed]:   show stack trace on failed test
+Diag[nostic]: show all tests output",
+                    v => testParameters.Verbosity = (Verbosity) Enum.Parse(typeof(Verbosity), v, true)
+                },
+                {"a|noassemblyisolation","Runs all tests in same AppDomain (but separates parallel threads)", _ => testParameters.IsolateAssemblies = false},
+                {"i|inconclusivesucceed","Consider inconclusive tests succeed", _ => testParameters.InconclusiveAsError = false},
+                {"t|timeout=","Set individual test time out", (TimeSpan t) => testParameters.Timeout = t},
+                {"u|noupdatecheck", "Does not check for updates", _ => checkForUpdates = false},
                 {"nologo", "Hides header", _ => showLogo = false},
                 {"h|help", "show this message and exit", _ => shouldShowHelp = true},
             };
@@ -45,11 +54,7 @@ namespace BestTest
                     WriteHeader();
                     Console.WriteLine("Syntax: BestTest [options] <assemblies>");
                     Console.WriteLine("Options:");
-                    using (var s = new StringWriter())
-                    {
-                        options.WriteOptionDescriptions(s);
-                        Console.WriteLine(s);
-                    }
+                    options.WriteOptionDescriptions(Console.Out);
                     return 0;
                 }
             }

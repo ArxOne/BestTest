@@ -77,6 +77,7 @@
     <Compile Include="Test\TestSet.cs" />
     <Compile Include="Test\TestStep.cs" />
     <Compile Include="Updater.cs" />
+    <Compile Include="Verbosity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\BestTest.snk" />

@@ -118,14 +118,19 @@ namespace BestTest.Test
             var inconclusiveCount = results.Count(r => r.ResultCode == ResultCode.Inconclusive);
             var failureCount = results.Count(r => r.ResultCode == ResultCode.Failure);
             var timeoutCount = results.Count(r => r.ResultCode == ResultCode.Timeout);
-            consoleWriter.WriteLine();
-            consoleWriter.WriteLine($"Total tests          : {results.Length}");
-            consoleWriter.WriteLine($"- succeeded tests    : {successCount}");
-            consoleWriter.WriteLine($"- inconclusive tests : {inconclusiveCount}");
-            consoleWriter.WriteLine($"- failed tests       : {failureCount}");
-            consoleWriter.WriteLine($"- timeout tests      : {timeoutCount}");
-            var dt = GetLiteral(DateTime.UtcNow - t0);
-            consoleWriter.WriteLine($"Total time           : {dt}");
+            if (parameters.Verbosity >= Verbosity.Normal)
+                consoleWriter.WriteLine();
+            if (parameters.Verbosity >= Verbosity.Minimal)
+            {
+                consoleWriter.WriteLine($"Total tests          : {results.Length}");
+                consoleWriter.WriteLine($"- succeeded tests    : {successCount}");
+                consoleWriter.WriteLine($"- inconclusive tests : {inconclusiveCount}");
+                consoleWriter.WriteLine($"- failed tests       : {failureCount}");
+                consoleWriter.WriteLine($"- timeout tests      : {timeoutCount}");
+                var dt = GetLiteral(DateTime.UtcNow - t0);
+                consoleWriter.WriteLine($"Total time           : {dt}");
+            }
+
             var errors = failureCount + timeoutCount;
             if (parameters.InconclusiveAsError)
                 errors += inconclusiveCount;
@@ -234,13 +239,17 @@ namespace BestTest.Test
                 var t0 = DateTime.UtcNow;
                 var stepResults = Test(testDescription, testInstances, parameters).ToArray();
                 var testAssessments = new TestResult(testDescription, stepResults, DateTime.UtcNow - t0);
-                TraceResult(testAssessments, consoleWriter, testSet);
+                TraceResult(testSet, testAssessments, consoleWriter, parameters);
                 testSet.PushResult(testAssessments);
             }
         }
 
-        private static TestResult TraceResult(TestResult testResult, ConsoleWriter consoleWriter, TestSet testSet)
+        private static TestResult TraceResult(TestSet testSet, TestResult testResult, ConsoleWriter consoleWriter, TestParameters parameters)
         {
+            // below normal, nothing is shown
+            if (parameters.Verbosity < Verbosity.Normal)
+                return testResult;
+
             var methodName = testResult.Description.MethodName;
             const int totalWidth = 60;
             var testStepResult = testResult.TestStepResult;
@@ -248,7 +257,15 @@ namespace BestTest.Test
             var literalTime = GetLiteral(testResult.Duration);
             var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
             var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success);
-            consoleWriter.WriteLine($"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(10)})");
+            // >= Normal: single line
+            var outputLine = $"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(10)})";
+            // >= Detailed: stack trace on error
+            if (parameters.Verbosity >= Verbosity.Detailed && testResult.ResultCode != ResultCode.Success)
+                outputLine += Environment.NewLine + testResult.TestStepResult?.Exception;
+            // >= Diagnostic: full output
+            if (parameters.Verbosity >= Verbosity.Diag)
+                outputLine += Environment.NewLine + testResult.TestStepResult?.Output;
+            consoleWriter.WriteLine(outputLine);
             return testResult;
         }
 

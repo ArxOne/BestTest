@@ -16,6 +16,7 @@ namespace BestTest.Test
 
         public TestStep Step { get; }
         public ResultCode ResultCode { get; }
+        public string Output { get; }
         public string ResultMessage { get; }
         public string Exception { get; }
 
@@ -28,6 +29,7 @@ namespace BestTest.Test
         {
             Step = step;
             ResultCode = resultCode;
+            Output = output;
             ResultMessage = e?.Message;
             Exception = e?.ToString();
         }
