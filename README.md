@@ -21,7 +21,7 @@ Assemblies can be specified by wildcard (`*Test.dll` for example).
 
 ## Planned features
 
-Visit the [issues pages](https://github.com/ArxOne/BestTest/issues) to see what's going on and suggest.
+Visit the [issues](https://github.com/ArxOne/BestTest/issues) to see what's going on and suggest new features if you want.
 
 ## Any help welcome
 
