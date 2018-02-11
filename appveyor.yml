@@ -5,9 +5,6 @@ version: '{branch}-{build}'
 
 os: Visual Studio 2017
 
-install:
-  - cmd: call BestTest\Properties\ProductVersion.bat # That one is generated when BestTest is built
-
 before_build:
   nuget restore
 
@@ -17,6 +14,9 @@ platform: Any CPU
 build:
   parallel: true
   verbosity: minimal
+
+after_build:
+  - cmd: call BestTest\Properties\ProductVersion.bat # That one is generated when BestTest is built
 
 artifacts:
   - path: BestTest\bin\$(configuration)\BestTest.exe
