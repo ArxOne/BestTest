@@ -82,10 +82,10 @@
   <ItemGroup>
     <None Include="Properties\BestTest.snk" />
     <None Include="Blobber" />
-    <Content Include="Properties\ProductVersion.tt">
+    <None Include="Properties\ProductVersion.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ProductVersion.bat</LastGenOutput>
-    </Content>
+    </None>
     <None Include="Properties\ProductVersion.bat">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
