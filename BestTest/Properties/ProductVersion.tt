@@ -1,11 +1,6 @@
 <#@ template debug="false" hostspecific="false" #>
 <#@ output extension=".bat" #>
 <#@ include file="..\..\ProductInfo.tt" #>
-
-echo 1
-
 set ProductName=<#=Title#>
 set ProductVersion=<#=Version#>
 set ProductDescription=<#=Description#>
-
-echo 2
