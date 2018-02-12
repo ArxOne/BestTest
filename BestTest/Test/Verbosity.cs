@@ -2,7 +2,7 @@
 // https://github.com/ArxOne/BestTest
 // MIT license, blah blah blah.
 
-namespace BestTest
+namespace BestTest.Test
 {
     public enum Verbosity
     {

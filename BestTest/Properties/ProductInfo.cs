@@ -1,5 +1,4 @@
-﻿
-// BestTest: test better than using MSTest
+﻿// BestTest: test better than using MSTest
 // https://github.com/ArxOne/BestTest
 // MIT license, blah blah blah.
 
@@ -17,5 +16,5 @@ using System.Resources;
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
 
-[assembly: AssemblyVersion("0.2.1")]
-[assembly: AssemblyFileVersion("0.2.1")]
+[assembly: AssemblyVersion("0.10")]
+[assembly: AssemblyFileVersion("0.10")]

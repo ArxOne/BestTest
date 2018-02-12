@@ -8,6 +8,7 @@ namespace BestTest.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Reflection;
 
     /// <summary>
     /// Gathers all test instances
@@ -28,10 +29,17 @@ namespace BestTest.Test
 
         private IEnumerable<TestResult> DoCleanup()
         {
-            foreach (var cleanup in _classCleanup)
-                yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
-            foreach (var cleanup in _assemblyCleanup)
-                yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null));
+            foreach (var cleanup in _classCleanup.Where(c => c.Item2 != null))
+            {
+                using (new ConfigFileContext(cleanup.Item2.DeclaringType.Assembly))
+                    yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
+            }
+
+            foreach (var cleanup in _assemblyCleanup.Where(c => c != null))
+            {
+                using (new ConfigFileContext(cleanup.DeclaringType.Assembly))
+                    yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null));
+            }
         }
 
         private static TestResult CreateTestsAssessments(MethodInfo method, StepResult result)
@@ -65,7 +73,8 @@ namespace BestTest.Test
                 if (assemblyIsNew)
                 {
                     _assemblies.Add(assemblyFullName);
-                    testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null);
+                    using (new ConfigFileContext(testDescription.Assembly))
+                        testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null);
                     if (failure != null)
                         return null;
                     // cleanup only once setup has succeeded
@@ -73,10 +82,14 @@ namespace BestTest.Test
                 }
 
                 // and initialize the type
-                testInstance.ClassInitializeFailure = failure =
-                    StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
-                    ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
-                    ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
+                using (new ConfigFileContext(testDescription.Assembly))
+                {
+                    testInstance.ClassInitializeFailure = failure =
+                        StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
+                        ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
+                        ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
+                }
+
                 if (failure != null)
                     return null;
 

@@ -170,7 +170,7 @@ namespace BestTest.Test
         private TestResult[] Test(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
         {
             // when assemblies are isolated, they all run with the same instances (and in the same appdomain)
-            var testInstances = parameters.IsolateAssemblies ? new TestInstances() : null;
+            var testInstances = parameters.Isolation.HasFlag(IsolationLevel.Threads) ? null : new TestInstances();
             var runners = CreateRunners(testSet, parameters, consoleWriter, testInstances);
             Await(runners);
             if (testInstances != null)
@@ -180,7 +180,7 @@ namespace BestTest.Test
 
         private static IEnumerable<IEnumerable<TestDescription>> GroupDescriptions(IEnumerable<TestDescription> testDescriptions, TestParameters parameters)
         {
-            if (parameters.IsolateAssemblies)
+            if (parameters.Isolation.HasFlag(IsolationLevel.Assemblies))
                 return testDescriptions.GroupBy(t => t.AssemblyName);
             return new[] { testDescriptions };
         }
@@ -263,7 +263,7 @@ namespace BestTest.Test
             if (parameters.Verbosity >= Verbosity.Detailed && testResult.ResultCode != ResultCode.Success)
                 outputLine += Environment.NewLine + testResult.TestStepResult?.Exception;
             // >= Diagnostic: full output
-            if (parameters.Verbosity >= Verbosity.Diag)
+            if (parameters.Verbosity >= Verbosity.Diagnostic)
                 outputLine += Environment.NewLine + testResult.TestStepResult?.Output;
             consoleWriter.WriteLine(outputLine);
             return testResult;
@@ -312,7 +312,10 @@ namespace BestTest.Test
             // initialize test
             var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
             if (initializationFailureTestAssessment != null)
+            {
                 yield return initializationFailureTestAssessment;
+                yield break;
+            }
 
             // run it
             StepResult[] stepResults = null;

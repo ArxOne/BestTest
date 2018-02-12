@@ -18,7 +18,7 @@ namespace BestTest.Test
 
         public bool InconclusiveAsError { get; set; } = true;
 
-        public bool IsolateAssemblies { get; set; } = true;
+        public IsolationLevel Isolation { get; set; } = IsolationLevel.Assemblies;
 
         public Verbosity Verbosity { get; set; } = Verbosity.Normal;
     }

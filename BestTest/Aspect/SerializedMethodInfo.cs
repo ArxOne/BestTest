@@ -6,12 +6,15 @@ namespace BestTest.Aspect
 {
     using System;
     using System.CodeDom;
+    using System.Configuration;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using ArxOne.MrAdvice.Advice;
     using ArxOne.MrAdvice.Annotation;
     using ArxOne.MrAdvice.Introduction;
+    using Reflection;
     using Test;
 
     [AttributeUsage(AttributeTargets.Property)]
@@ -101,7 +104,8 @@ namespace BestTest.Aspect
 
         private static Assembly LoadAssembly(MethodDescriptor methodDescriptor)
         {
-            return Assembly.LoadFrom(methodDescriptor.AssemblyPath);
+            using (new ConfigFileContext(methodDescriptor.AssemblyPath))
+                return Assembly.LoadFrom(methodDescriptor.AssemblyPath);
         }
     }
 }

@@ -17,6 +17,8 @@ namespace BestTest.Test
 
         public string AssemblyName { get; }
 
+        public Assembly Assembly => TestMethod.DeclaringType.Assembly;
+
         public string TypeName { get; }
 
         public string MethodName { get; }

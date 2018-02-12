@@ -51,7 +51,7 @@ namespace BestTest
                             {
                                 if (Version.TryParse(match.Groups["version"].Value, out var onlineVersion))
                                 {
-                                    if (AssemblyReflection.FileVersion <= onlineVersion)
+                                    if (AssemblyReflection.FileVersion >= onlineVersion)
                                         return;
 
                                     var latestVersionDirectDownload = new Uri($"https://github.com/ArxOne/BestTest/releases/download/BestTest-{onlineVersion}/BestTest.exe");

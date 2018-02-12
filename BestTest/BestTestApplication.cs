@@ -5,7 +5,6 @@
 namespace BestTest
 {
     using System;
-    using System.IO;
     using Mono.Options;
     using Reflection;
     using Test;
@@ -32,14 +31,20 @@ namespace BestTest
                     "v|verbosity:", @"Specifies verbosity level:
 Q[uiet]:      nothing is shown
 M[inimal]:    assessment is displayed
-N[ormal]:     show tests list and result
+N[ormal]:     show tests list and result (default)
 D[etailed]:   show stack trace on failed test
 Diag[nostic]: show all tests output",
-                    v => testParameters.Verbosity = (Verbosity) Enum.Parse(typeof(Verbosity), v, true)
+                    (Verbosity v )=> testParameters.Verbosity = v
                 },
-                {"a|noassemblyisolation","Runs all tests in same AppDomain (but separates parallel threads)", _ => testParameters.IsolateAssemblies = false},
-                {"i|inconclusivesucceed","Consider inconclusive tests succeed", _ => testParameters.InconclusiveAsError = false},
-                {"t|timeout=","Set individual test time out", (TimeSpan t) => testParameters.Timeout = t},
+                {"I|isolation:", @"Sets isolation level:
+N[one]: no isolation, all threads and assemblies share the same space
+A[ssemblies]: isolate assemblies but no thread (MSTest compatibility, default)
+T[hreads]:    isolate test threads (when there are threads)
+E[verything]: assemblies and threads are isolated (for poorly written tests and SpecFlow :))",
+                    (IsolationLevel i) => testParameters.Isolation = i
+    },
+                {"i|inconclusivesucceed", "Consider inconclusive tests succeed", _ => testParameters.InconclusiveAsError = false},
+                {"t|timeout=", "Set individual test time out", (TimeSpan t) => testParameters.Timeout = t},
                 {"u|noupdatecheck", "Does not check for updates", _ => checkForUpdates = false},
                 {"nologo", "Hides header", _ => showLogo = false},
                 {"h|help", "show this message and exit", _ => shouldShowHelp = true},
