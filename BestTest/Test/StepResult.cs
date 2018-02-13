@@ -34,7 +34,7 @@ namespace BestTest.Test
             Exception = e?.ToString();
         }
 
-        private static StepResult Invoke(Action action, TestStep step, ICustomAttributeProvider expectedExceptionsAttributeProvider)
+        private static StepResult Invoke(Action action, TestStep step, MethodInfo expectedExceptionsAttributeProvider, TestParameters parameters)
         {
             if (action == null)
                 return null;
@@ -45,20 +45,14 @@ namespace BestTest.Test
                     action();
                     return null;
                 }
-                catch (TargetInvocationException e) when (step == TestStep.Test &&
-                                                          (e.InnerException.GetType().Name == "AssertInconclusiveException" ||
-                                                           e.InnerException.GetType().Name == "InconclusiveException"))
+                catch (TargetInvocationException e) when (step == TestStep.Test && parameters.Framework.IsInconclusive(e.InnerException))
                 {
                     return new StepResult(step, ResultCode.Inconclusive, e.InnerException, consoleCapture.Capture);
                 }
-                catch (TargetInvocationException e) when (step == TestStep.Test &&
-                                                          (e.InnerException.GetType().Name == "AssertFailedException" || e.InnerException.GetType().Name == "FailedException"))
-                {
-                    return new StepResult(step, ResultCode.Failure, e.InnerException, consoleCapture.Capture);
-                }
                 catch (TargetInvocationException e)
                 {
-                    if (step == TestStep.Test && GetExpectedExceptionTypes(expectedExceptionsAttributeProvider)
+                    if (step == TestStep.Test && expectedExceptionsAttributeProvider != null && parameters.Framework
+                            .GetExpectedExceptions(expectedExceptionsAttributeProvider)
                             .Any(expectedType => expectedType.IsInstanceOfType(e.InnerException)))
                         return null;
                     return new StepResult(step, ResultCode.Failure, e.InnerException, consoleCapture.Capture);
@@ -71,8 +65,9 @@ namespace BestTest.Test
         /// </summary>
         /// <param name="action">The action.</param>
         /// <param name="step">The step.</param>
+        /// <param name="parameters"></param>
         /// <returns>An assessment on failure, null on success</returns>
-        public static StepResult Get(Action action, TestStep step) => Invoke(action, step, null);
+        public static StepResult Get(Action action, TestStep step, TestParameters parameters) => Invoke(action, step, null, parameters);
 
         /// <summary>
         /// Invokes the specified method.
@@ -80,11 +75,12 @@ namespace BestTest.Test
         /// <param name="method">The method.</param>
         /// <param name="step">The step.</param>
         /// <param name="instance">The instance.</param>
+        /// <param name="parameters"></param>
         /// <param name="parameter">The parameter.</param>
         /// <returns>
         /// An assessment on failure, null on success
         /// </returns>
-        public static StepResult Get(MethodInfo method, TestStep step, object instance, object parameter = null)
+        public static StepResult Get(MethodInfo method, TestStep step, object instance, TestParameters parameters, object parameter = null)
         {
             if (method == null)
                 return null;
@@ -100,23 +96,7 @@ namespace BestTest.Test
                 }
                 else
                     method.Invoke(instance, NoParameter);
-            }, step, method);
-        }
-
-        private static IEnumerable<Type> GetExpectedExceptionTypes(ICustomAttributeProvider attributeProvider)
-        {
-            if (attributeProvider == null)
-                yield break;
-            var expectedExceptionAttributes = attributeProvider.GetCustomAttributes(false).Where(a => a.GetType().Name == "ExpectedExceptionAttribute");
-            foreach (var expectedExceptionAttribute in expectedExceptionAttributes)
-            {
-                var exceptionTypeMember = expectedExceptionAttribute.GetType().GetProperty("ExceptionType");
-                if (exceptionTypeMember != null)
-                {
-                    var expectedType = (Type)exceptionTypeMember.GetValue(expectedExceptionAttribute);
-                    yield return expectedType;
-                }
-            }
+            }, step, method, parameters);
         }
     }
 }

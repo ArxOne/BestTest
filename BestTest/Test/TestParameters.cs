@@ -6,6 +6,7 @@ namespace BestTest.Test
 {
     using System;
     using System.Collections.Generic;
+    using Framework;
 
     [Serializable]
     public class TestParameters
@@ -21,5 +22,7 @@ namespace BestTest.Test
         public IsolationLevel Isolation { get; set; } = IsolationLevel.Assemblies;
 
         public Verbosity Verbosity { get; set; } = Verbosity.Normal;
+
+        public MSTestFramework Framework { get; set; } = new MSTestFramework();
     }
 }

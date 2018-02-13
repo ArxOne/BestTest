@@ -24,21 +24,22 @@ namespace BestTest.Test
         /// <summary>
         /// Runs all pending cleanup methods.
         /// </summary>
+        /// <param name="parameters"></param>
         /// <returns></returns>
-        public TestResult[] Cleanup() => DoCleanup().Where(a => a != null).ToArray();
+        public TestResult[] Cleanup(TestParameters parameters) => DoCleanup(parameters).Where(a => a != null).ToArray();
 
-        private IEnumerable<TestResult> DoCleanup()
+        private IEnumerable<TestResult> DoCleanup(TestParameters parameters)
         {
             foreach (var cleanup in _classCleanup.Where(c => c.Item2 != null))
             {
                 using (new ConfigFileContext(cleanup.Item2.DeclaringType.Assembly))
-                    yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, cleanup.Item3));
+                    yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, parameters, cleanup.Item3));
             }
 
             foreach (var cleanup in _assemblyCleanup.Where(c => c != null))
             {
                 using (new ConfigFileContext(cleanup.DeclaringType.Assembly))
-                    yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null));
+                    yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null, parameters));
             }
         }
 
@@ -49,7 +50,7 @@ namespace BestTest.Test
             return new TestResult(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { result }, TimeSpan.Zero);
         }
 
-        public TestInstance Get(TestDescription testDescription, out StepResult failure)
+        public TestInstance Get(TestDescription testDescription, out StepResult failure, TestParameters parameters)
         {
             lock (_testInstances)
             {
@@ -74,7 +75,7 @@ namespace BestTest.Test
                 {
                     _assemblies.Add(assemblyFullName);
                     using (new ConfigFileContext(testDescription.Assembly))
-                        testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null);
+                        testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null, parameters);
                     if (failure != null)
                         return null;
                     // cleanup only once setup has succeeded
@@ -85,9 +86,9 @@ namespace BestTest.Test
                 using (new ConfigFileContext(testDescription.Assembly))
                 {
                     testInstance.ClassInitializeFailure = failure =
-                        StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize)
-                        ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize)
-                        ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testInstance.Context);
+                        StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize, parameters)
+                        ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize, parameters)
+                        ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, parameters, testInstance.Context);
                 }
 
                 if (failure != null)

@@ -37,7 +37,7 @@ namespace BestTest.Test
                     try
                     {
                         var assembly = Assembly.LoadFrom(assemblyPath);
-                        allTests.AddRange(EnumerateTests(assembly));
+                        allTests.AddRange(EnumerateTests(assembly, testParameters));
                     }
                     catch
                     {
@@ -62,51 +62,37 @@ namespace BestTest.Test
             return ".";
         }
 
-        private IEnumerable<TestDescription> EnumerateTests(Assembly assembly)
+        private IEnumerable<TestDescription> EnumerateTests(Assembly assembly, TestParameters parameters)
         {
-            foreach (var testType in assembly.GetTypes().Where(IsTestClass))
+            foreach (var testType in assembly.GetTypes().Where(t => parameters.Framework.IsTestClass(t)))
             {
-                foreach (var testDescription in EnumerateTests(assembly, testType))
+                foreach (var testDescription in EnumerateTests(assembly, testType, parameters))
                     yield return testDescription;
             }
         }
 
-        private static IEnumerable<TestDescription> EnumerateTests(Assembly assembly, Type testType)
+        private static IEnumerable<TestDescription> EnumerateTests(Assembly assembly, Type testType, TestParameters parameters)
         {
             MethodInfo assemblyInitialize = null, assemblyCleanup = null, classInitialize = null, classCleanup = null, testInitialize = null, testCleanup = null;
             foreach (var method in testType.GetMethods())
             {
-                if (!method.IsValidTestMethod())
-                    continue;
-                // static methods only allowed in assembly manipulation
-                if (method.IsStatic)
-                {
-                    if (method.HasAnyAttribute("AssemblyInitialize"))
-                        assemblyInitialize = method;
-                    if (method.HasAnyAttribute("AssemblyCleanup"))
-                        assemblyCleanup = method;
-                }
-                else
-                {
-                    if (method.HasAnyAttribute("TestInitialize"))
-                        testInitialize = method;
-                    if (method.HasAnyAttribute("TestCleanup"))
-                        testCleanup = method;
-                }
-
-                // class methods apparently can be both (mother fuckers!)
-                if (method.HasAnyAttribute("ClassInitialize"))
+                if (parameters.Framework.IsAssemblySetupMethod(method))
+                    assemblyInitialize = method;
+                if (parameters.Framework.IsAssemblyCleanupMethod(method))
+                    assemblyCleanup = method;
+                if (parameters.Framework.IsTestSetupMethod(method))
+                    testInitialize = method;
+                if (parameters.Framework.IsTestCleanupMethod(method))
+                    testCleanup = method;
+                if (parameters.Framework.IsTypeSetupMethod(method))
                     classInitialize = method;
-                if (method.HasAnyAttribute("ClassCleanup"))
+                if (parameters.Framework.IsTypeCleanupMethod(method))
                     classCleanup = method;
             }
 
-            foreach (var testMethod in testType.GetMethods().Where(t => IsTestMethod(t) && !t.IsStatic))
+            foreach (var testMethod in testType.GetMethods().Where(m => parameters.Framework.IsTestMethod(m)))
                 yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup);
         }
-
-        private static bool IsTestClass(Type type) => type.IsValidTestType() && type.HasAnyAttribute("TestClass", "TestFixture");
-        private static bool IsTestMethod(MethodInfo method) => method.IsValidTestMethod() && method.HasAnyAttribute("TestMethod", "Test");
 
         [SeparateAppDomain]
         private int RunTests(TestParameters parameters)
@@ -174,7 +160,7 @@ namespace BestTest.Test
             var runners = CreateRunners(testSet, parameters, consoleWriter, testInstances);
             Await(runners);
             if (testInstances != null)
-                testSet.PushResults(testInstances.Cleanup());
+                testSet.PushResults(testInstances.Cleanup(parameters));
             return testSet.Results;
         }
 
@@ -225,7 +211,7 @@ namespace BestTest.Test
         {
             var testInstances = new TestInstances();
             InlineParallelRunner(testSet, parameters, consoleWriter, testInstances);
-            testSet.PushResults(testInstances.Cleanup());
+            testSet.PushResults(testInstances.Cleanup(parameters));
         }
 
         private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances)
@@ -310,7 +296,7 @@ namespace BestTest.Test
         private IEnumerable<StepResult> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
         {
             // initialize test
-            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment);
+            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment, parameters);
             if (initializationFailureTestAssessment != null)
             {
                 yield return initializationFailureTestAssessment;
@@ -324,7 +310,7 @@ namespace BestTest.Test
             {
                 using (var consoleCapture = new ConsoleCapture())
                 {
-                    stepResults = Test(testDescription, testInstance).ToArray();
+                    stepResults = Test(testDescription, testInstance, parameters).ToArray();
                     consoleOutput = consoleCapture.Capture;
                 }
             });
@@ -342,14 +328,14 @@ namespace BestTest.Test
             yield return new StepResult(TestStep.Test, ResultCode.Timeout, null, consoleOutput);
         }
 
-        private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance)
+        private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance, TestParameters parameters)
         {
             // if initializer fails, no need to run the test
-            var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testInstance.Context)
-                                 ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testInstance.Context)
+            var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, parameters, testInstance.Context)
+                                 ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, parameters, testInstance.Context)
                                  ?? StepResult.TestSuccess;
             yield return testAssessment;
-            var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testInstance.Context);
+            var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, parameters, testInstance.Context);
             if (cleanupTestAssessment != null)
                 yield return cleanupTestAssessment;
         }
