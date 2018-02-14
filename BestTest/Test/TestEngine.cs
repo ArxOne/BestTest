@@ -99,6 +99,16 @@ namespace BestTest.Test
         {
             var t0 = DateTime.UtcNow;
             var consoleWriter = new ConsoleWriter(Console.Out);
+
+            if (parameters.Verbosity >= Verbosity.Detailed)
+            {
+                var literalThreading = parameters.ParallelRuns > 1 ? $"multi-thread ({parameters.ParallelRuns} threads)" : "single-thread";
+                consoleWriter.WriteLine($"Threading:              {literalThreading}");
+                var inconclusiveAsErrors = parameters.InconclusiveAsError ? "yes" : "no";
+                consoleWriter.WriteLine($"Inconclusive as errors: {inconclusiveAsErrors}");
+                consoleWriter.WriteLine($"Isolation:              {GetLiteral(parameters.Isolation)}");
+            }
+
             var results = Test(parameters, consoleWriter);
             var successCount = results.Count(r => r.ResultCode == ResultCode.Success);
             var inconclusiveCount = results.Count(r => r.ResultCode == ResultCode.Inconclusive);
@@ -123,6 +133,23 @@ namespace BestTest.Test
             return errors;
         }
 
+        private static string GetLiteral(IsolationLevel level)
+        {
+            switch (level)
+            {
+                case IsolationLevel.None:
+                    return "none";
+                case IsolationLevel.Assemblies:
+                    return "assemblies (MSTest compatibility)";
+                case IsolationLevel.Threads:
+                    return "threads";
+                case IsolationLevel.Everything:
+                    return "assemblies+threads";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(level), level, null);
+            }
+        }
+
         /// <summary>
         /// Runs the tests described by parameters.
         /// </summary>
@@ -136,6 +163,13 @@ namespace BestTest.Test
         public TestResult[] Test(TestParameters parameters, ConsoleWriter consoleWriter)
         {
             var testDescriptions = EnumerateTests(parameters).ToArray();
+            if (parameters.Verbosity >= Verbosity.Detailed)
+            {
+                var assemblies = testDescriptions.Select(t => t.AssemblyName).Distinct();
+                var testedAssemblies = string.Join(Environment.NewLine + "                      ", assemblies);
+                consoleWriter.WriteLine($"Tested assemblies:      {testedAssemblies}");
+                consoleWriter.WriteLine();
+            }
             return Test(testDescriptions, parameters, consoleWriter);
         }
 
