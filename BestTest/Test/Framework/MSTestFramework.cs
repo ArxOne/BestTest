@@ -11,7 +11,7 @@ namespace BestTest.Test.Framework
     using Reflection;
 
     [Serializable]
-    public class MSTestFramework
+    public class MSTestFramework : ITestFramework
     {
         public bool IsTestClass(Type type)
         {

@@ -23,6 +23,6 @@ namespace BestTest.Test
 
         public Verbosity Verbosity { get; set; } = Verbosity.Normal;
 
-        public MSTestFramework Framework { get; set; } = new MSTestFramework();
+        public ITestFramework Framework { get; set; } = new MSTestFramework();
     }
 }

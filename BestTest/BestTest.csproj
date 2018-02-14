@@ -67,6 +67,7 @@
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Test\ConsoleCapture.cs" />
     <Compile Include="Test\ConsoleWriter.cs" />
+    <Compile Include="Test\Framework\ITestFramework.cs" />
     <Compile Include="Test\Framework\MSTestFramework.cs" />
     <Compile Include="Test\IsolationLevel.cs" />
     <Compile Include="Test\StepResult.cs" />
