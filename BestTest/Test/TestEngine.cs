@@ -12,7 +12,7 @@ namespace BestTest.Test
     using System.Linq;
     using System.Reflection;
     using System.Threading;
-    using Reflection;
+    using Framework;
 
     public class TestEngine : MarshalByRefObject
     {
@@ -62,9 +62,15 @@ namespace BestTest.Test
             return ".";
         }
 
+        /// <summary>
+        /// Enumerates the tests present in the given assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns></returns>
         private IEnumerable<TestDescription> EnumerateTests(Assembly assembly, TestParameters parameters)
         {
-            foreach (var testType in assembly.GetTypes().Where(t => parameters.Framework.IsTestClass(t)))
+            foreach (var testType in assembly.GetTypes().Where(parameters.Framework.IsTestClass))
             {
                 foreach (var testDescription in EnumerateTests(assembly, testType, parameters))
                     yield return testDescription;
@@ -73,25 +79,26 @@ namespace BestTest.Test
 
         private static IEnumerable<TestDescription> EnumerateTests(Assembly assembly, Type testType, TestParameters parameters)
         {
+            var testFramework = parameters.Framework;
             MethodInfo assemblyInitialize = null, assemblyCleanup = null, classInitialize = null, classCleanup = null, testInitialize = null, testCleanup = null;
             foreach (var method in testType.GetMethods())
             {
-                if (parameters.Framework.IsAssemblySetupMethod(method))
+                if (testFramework.IsAssemblySetupMethod(method))
                     assemblyInitialize = method;
-                if (parameters.Framework.IsAssemblyCleanupMethod(method))
+                if (testFramework.IsAssemblyCleanupMethod(method))
                     assemblyCleanup = method;
-                if (parameters.Framework.IsTestSetupMethod(method))
+                if (testFramework.IsTestSetupMethod(method))
                     testInitialize = method;
-                if (parameters.Framework.IsTestCleanupMethod(method))
+                if (testFramework.IsTestCleanupMethod(method))
                     testCleanup = method;
-                if (parameters.Framework.IsTypeSetupMethod(method))
+                if (testFramework.IsTypeSetupMethod(method))
                     classInitialize = method;
-                if (parameters.Framework.IsTypeCleanupMethod(method))
+                if (testFramework.IsTypeCleanupMethod(method))
                     classCleanup = method;
             }
 
-            foreach (var testMethod in testType.GetMethods().Where(m => parameters.Framework.IsTestMethod(m)))
-                yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup);
+            foreach (var testMethod in testType.GetMethods().Where(testFramework.IsTestMethod))
+                yield return new TestDescription(assembly.Location, testMethod, testInitialize, testCleanup, classInitialize, classCleanup, assemblyInitialize, assemblyCleanup, parameters);
         }
 
         [SeparateAppDomain]
@@ -180,18 +187,19 @@ namespace BestTest.Test
 
         public TestResult[] Test(TestDescription[] testDescriptions, TestParameters parameters, ConsoleWriter consoleWriter)
         {
+            var maxNameLength = Math.Min(testDescriptions.Aggregate(0, (s, t) => Math.Max(s, t.TestName.Length)) + 1, 80);
             var groupedTestDescriptions = GroupDescriptions(testDescriptions, parameters);
             var testSets = groupedTestDescriptions.Select(t => new TestSet(t, testDescriptions.Length));
-            var results = testSets.SelectMany(testSet => Test(testSet, parameters, consoleWriter)).ToArray();
+            var results = testSets.SelectMany(testSet => Test(testSet, parameters, consoleWriter, maxNameLength)).ToArray();
             return results;
         }
 
         [SeparateAppDomain]
-        private TestResult[] Test(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
+        private TestResult[] Test(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, int maxNameLength)
         {
             // when assemblies are isolated, they all run with the same instances (and in the same appdomain)
             var testInstances = parameters.Isolation.HasFlag(IsolationLevel.Threads) ? null : new TestInstances();
-            var runners = CreateRunners(testSet, parameters, consoleWriter, testInstances);
+            var runners = CreateRunners(testSet, parameters, consoleWriter, testInstances, maxNameLength);
             Await(runners);
             if (testInstances != null)
                 testSet.PushResults(testInstances.Cleanup(parameters));
@@ -212,17 +220,19 @@ namespace BestTest.Test
         /// <param name="parameters">The parameters.</param>
         /// <param name="consoleWriter">The output writer.</param>
         /// <param name="testInstances">The test instances.</param>
+        /// <param name="maxNameLength"></param>
         /// <returns></returns>
-        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances)
+        private IEnumerable<Thread> CreateRunners(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances,
+            int maxNameLength)
         {
             for (int runnerIndex = 0; runnerIndex < parameters.ParallelRuns; runnerIndex++)
             {
                 var thread = new Thread(delegate ()
                 {
                     if (testInstances != null)
-                        InlineParallelRunner(testSet, parameters, consoleWriter, testInstances);
+                        InlineParallelRunner(testSet, parameters, consoleWriter, testInstances, maxNameLength);
                     else
-                        SeparatedParallelRunner(testSet, parameters, consoleWriter);
+                        SeparatedParallelRunner(testSet, parameters, consoleWriter, maxNameLength);
                 });
                 thread.Start();
                 yield return thread;
@@ -241,14 +251,15 @@ namespace BestTest.Test
         }
 
         [SeparateAppDomain]
-        private void SeparatedParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter)
+        private void SeparatedParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, int maxNameLength)
         {
             var testInstances = new TestInstances();
-            InlineParallelRunner(testSet, parameters, consoleWriter, testInstances);
+            InlineParallelRunner(testSet, parameters, consoleWriter, testInstances, maxNameLength);
             testSet.PushResults(testInstances.Cleanup(parameters));
         }
 
-        private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances)
+        private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances,
+            int maxNameLength)
         {
             for (; ; )
             {
@@ -259,21 +270,20 @@ namespace BestTest.Test
                 var t0 = DateTime.UtcNow;
                 var stepResults = Test(testDescription, testInstances, parameters).ToArray();
                 var testAssessments = new TestResult(testDescription, stepResults, DateTime.UtcNow - t0);
-                TraceResult(testSet, testAssessments, consoleWriter, parameters);
+                TraceResult(testSet, testAssessments, consoleWriter, parameters, maxNameLength);
                 testSet.PushResult(testAssessments);
             }
         }
 
-        private static TestResult TraceResult(TestSet testSet, TestResult testResult, ConsoleWriter consoleWriter, TestParameters parameters)
+        private static TestResult TraceResult(TestSet testSet, TestResult testResult, ConsoleWriter consoleWriter, TestParameters parameters, int maxNameLength)
         {
             // below normal, nothing is shown
             if (parameters.Verbosity < Verbosity.Normal)
                 return testResult;
 
-            var methodName = testResult.Description.MethodName;
-            const int totalWidth = 60;
+            var methodName = testResult.Description.TestName;
             var testStepResult = testResult.TestStepResult;
-            methodName = methodName.Substring(0, Math.Min(methodName.Length, totalWidth)).PadRight(totalWidth);
+            methodName = methodName.Substring(0, Math.Min(methodName.Length, maxNameLength)).PadRight(maxNameLength);
             var literalTime = GetLiteral(testResult.Duration);
             var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
             var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success);
@@ -330,7 +340,7 @@ namespace BestTest.Test
         private IEnumerable<StepResult> Test(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
         {
             // initialize test
-            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment, parameters);
+            var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment, parameters.Framework);
             if (initializationFailureTestAssessment != null)
             {
                 yield return initializationFailureTestAssessment;
@@ -344,7 +354,7 @@ namespace BestTest.Test
             {
                 using (var consoleCapture = new ConsoleCapture())
                 {
-                    stepResults = Test(testDescription, testInstance, parameters).ToArray();
+                    stepResults = Test(testDescription, testInstance, parameters.Framework).ToArray();
                     consoleOutput = consoleCapture.Capture;
                 }
             });
@@ -362,14 +372,14 @@ namespace BestTest.Test
             yield return new StepResult(TestStep.Test, ResultCode.Timeout, null, consoleOutput);
         }
 
-        private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance, TestParameters parameters)
+        private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance, ITestFramework testFramework)
         {
             // if initializer fails, no need to run the test
-            var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, parameters, testInstance.Context)
-                                 ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, parameters, testInstance.Context)
+            var testAssessment = StepResult.Get(testDescription.TestInitialize, TestStep.TestInitialize, testInstance.Instance, testFramework, testInstance.Context)
+                                 ?? StepResult.Get(testDescription.TestMethod, TestStep.Test, testInstance.Instance, testFramework, testInstance.Context)
                                  ?? StepResult.TestSuccess;
             yield return testAssessment;
-            var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, parameters, testInstance.Context);
+            var cleanupTestAssessment = StepResult.Get(testDescription.TestCleanup, TestStep.TestCleanup, testInstance.Instance, testFramework, testInstance.Context);
             if (cleanupTestAssessment != null)
                 yield return cleanupTestAssessment;
         }

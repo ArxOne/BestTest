@@ -8,6 +8,7 @@ namespace BestTest.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Framework;
     using Reflection;
 
     /// <summary>
@@ -24,7 +25,7 @@ namespace BestTest.Test
         /// <summary>
         /// Runs all pending cleanup methods.
         /// </summary>
-        /// <param name="parameters"></param>
+        /// <param name="parameters">The parameters.</param>
         /// <returns></returns>
         public TestResult[] Cleanup(TestParameters parameters) => DoCleanup(parameters).Where(a => a != null).ToArray();
 
@@ -33,24 +34,24 @@ namespace BestTest.Test
             foreach (var cleanup in _classCleanup.Where(c => c.Item2 != null))
             {
                 using (new ConfigFileContext(cleanup.Item2.DeclaringType.Assembly))
-                    yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, parameters, cleanup.Item3));
+                    yield return CreateTestsAssessments(cleanup.Item2, StepResult.Get(cleanup.Item2, TestStep.ClassCleanup, cleanup.Item1, parameters.Framework, cleanup.Item3), parameters);
             }
 
             foreach (var cleanup in _assemblyCleanup.Where(c => c != null))
             {
                 using (new ConfigFileContext(cleanup.DeclaringType.Assembly))
-                    yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null, parameters));
+                    yield return CreateTestsAssessments(cleanup, StepResult.Get(cleanup, TestStep.AssemblyCleanup, null, parameters.Framework), parameters);
             }
         }
 
-        private static TestResult CreateTestsAssessments(MethodInfo method, StepResult result)
+        private static TestResult CreateTestsAssessments(MethodInfo method, StepResult result, TestParameters parameters)
         {
             if (result == null)
                 return null;
-            return new TestResult(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null), new[] { result }, TimeSpan.Zero);
+            return new TestResult(new TestDescription(method.DeclaringType.Assembly.Location, method, null, null, null, null, null, null, parameters), new[] { result }, TimeSpan.Zero);
         }
 
-        public TestInstance Get(TestDescription testDescription, out StepResult failure, TestParameters parameters)
+        public TestInstance Get(TestDescription testDescription, out StepResult failure, ITestFramework testFramework)
         {
             lock (_testInstances)
             {
@@ -75,7 +76,7 @@ namespace BestTest.Test
                 {
                     _assemblies.Add(assemblyFullName);
                     using (new ConfigFileContext(testDescription.Assembly))
-                        testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null, parameters);
+                        testInstance.AssemblyInitializeFailure = failure = StepResult.Get(testDescription.AssemblyInitialize, TestStep.AssemblyInitialize, null, testFramework);
                     if (failure != null)
                         return null;
                     // cleanup only once setup has succeeded
@@ -86,9 +87,9 @@ namespace BestTest.Test
                 using (new ConfigFileContext(testDescription.Assembly))
                 {
                     testInstance.ClassInitializeFailure = failure =
-                        StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize, parameters)
-                        ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize, parameters)
-                        ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, parameters, testInstance.Context);
+                        StepResult.Get(() => testInstance.Instance = Activator.CreateInstance(testClass), TestStep.ClassInitialize, testFramework)
+                        ?? StepResult.Get(() => SetTestContext(testInstance.Instance, testInstance.Context), TestStep.ClassInitialize, testFramework)
+                        ?? StepResult.Get(testDescription.ClassInitialize, TestStep.ClassInitialize, testInstance.Instance, testFramework, testInstance.Context);
                 }
 
                 if (failure != null)

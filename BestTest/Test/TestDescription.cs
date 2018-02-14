@@ -8,6 +8,7 @@ namespace BestTest.Test
     using System.Diagnostics;
     using System.Reflection;
     using Aspect;
+    using Framework;
 
     [Serializable]
     [DebuggerDisplay("{" + nameof(DebugLiteral) + "}")]
@@ -33,12 +34,16 @@ namespace BestTest.Test
         [SerializedMethodInfo] public MethodInfo TestInitialize { get; private set; }
         [SerializedMethodInfo] public MethodInfo TestCleanup { get; private set; }
 
+        public string Description { get; }
+
+        public string TestName => Description ?? TestMethod.Name;
+
         [Obsolete("Serialization-only ctor")]
         public TestDescription()
         { }
 
         public TestDescription(string assemblyPath, MethodInfo testMethod, MethodInfo testInitialize, MethodInfo testCleanup, MethodInfo classInitialize, MethodInfo classCleanup,
-            MethodInfo assemblyInitialize, MethodInfo assemblyCleanup)
+            MethodInfo assemblyInitialize, MethodInfo assemblyCleanup, TestParameters parameters)
         {
             AssemblyPath = assemblyPath;
             TestMethod = testMethod;
@@ -52,6 +57,8 @@ namespace BestTest.Test
             AssemblyName = testMethod.DeclaringType.Assembly.FullName;
             TypeName = testMethod.DeclaringType.FullName;
             MethodName = testMethod.Name;
+            if (parameters.DisplayDescription)
+                Description = parameters.Framework.GetDescription(testMethod);
         }
     }
 }

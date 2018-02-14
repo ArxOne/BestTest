@@ -27,6 +27,7 @@ namespace BestTest
                     "m|maxcpucount:", "Specifies the maximum number of concurrent processes to use when building",
                     (int? v) => testParameters.ParallelRuns = v ?? Environment.ProcessorCount
                 },
+                {"d|description", "Display test description (when available) instead of name", _ => testParameters.DisplayDescription = true},
                 {
                     "v|verbosity:", @"Specifies verbosity level:
 Q[uiet]:      nothing is shown

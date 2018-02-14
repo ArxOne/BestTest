@@ -82,5 +82,12 @@ namespace BestTest.Test.Framework
         /// <param name="methodInfo">The method information.</param>
         /// <returns></returns>
         IEnumerable<Type> GetExpectedExceptions(MethodInfo methodInfo);
+
+        /// <summary>
+        /// Gets the description.
+        /// </summary>
+        /// <param name="methodInfo">The method information.</param>
+        /// <returns></returns>
+        string GetDescription(MethodInfo methodInfo);
     }
 }

@@ -75,5 +75,14 @@ namespace BestTest.Test.Framework
                 .Select(a => a.GetMemberValue("ExceptionType"))
                 .OfType<Type>();
         }
+
+        public string GetDescription(MethodInfo methodInfo)
+        {
+            var descriptionAttributes = methodInfo.GetAnyAttribute("DescriptionAttribute");
+            var descriptions = descriptionAttributes.Select(a => a.GetMemberValue("Description")).Where(d => d != null).ToArray();
+            if (descriptions.Length == 0)
+                return null;
+            return string.Join(" ", descriptions);
+        }
     }
 }

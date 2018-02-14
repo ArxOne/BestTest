@@ -8,6 +8,7 @@ namespace BestTest.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Framework;
 
     [Serializable]
     public class StepResult
@@ -34,7 +35,7 @@ namespace BestTest.Test
             Exception = e?.ToString();
         }
 
-        private static StepResult Invoke(Action action, TestStep step, MethodInfo expectedExceptionsAttributeProvider, TestParameters parameters)
+        private static StepResult Invoke(Action action, TestStep step, MethodInfo expectedExceptionsAttributeProvider, ITestFramework testFramework)
         {
             if (action == null)
                 return null;
@@ -45,13 +46,13 @@ namespace BestTest.Test
                     action();
                     return null;
                 }
-                catch (TargetInvocationException e) when (step == TestStep.Test && parameters.Framework.IsInconclusive(e.InnerException))
+                catch (TargetInvocationException e) when (step == TestStep.Test && testFramework.IsInconclusive(e.InnerException))
                 {
                     return new StepResult(step, ResultCode.Inconclusive, e.InnerException, consoleCapture.Capture);
                 }
                 catch (TargetInvocationException e)
                 {
-                    if (step == TestStep.Test && expectedExceptionsAttributeProvider != null && parameters.Framework
+                    if (step == TestStep.Test && expectedExceptionsAttributeProvider != null && testFramework
                             .GetExpectedExceptions(expectedExceptionsAttributeProvider)
                             .Any(expectedType => expectedType.IsInstanceOfType(e.InnerException)))
                         return null;
@@ -65,9 +66,11 @@ namespace BestTest.Test
         /// </summary>
         /// <param name="action">The action.</param>
         /// <param name="step">The step.</param>
-        /// <param name="parameters"></param>
-        /// <returns>An assessment on failure, null on success</returns>
-        public static StepResult Get(Action action, TestStep step, TestParameters parameters) => Invoke(action, step, null, parameters);
+        /// <param name="testFramework">The test framework.</param>
+        /// <returns>
+        /// An assessment on failure, null on success
+        /// </returns>
+        public static StepResult Get(Action action, TestStep step, ITestFramework testFramework) => Invoke(action, step, null, testFramework);
 
         /// <summary>
         /// Invokes the specified method.
@@ -75,12 +78,12 @@ namespace BestTest.Test
         /// <param name="method">The method.</param>
         /// <param name="step">The step.</param>
         /// <param name="instance">The instance.</param>
-        /// <param name="parameters"></param>
+        /// <param name="testFramework">The test framework.</param>
         /// <param name="parameter">The parameter.</param>
         /// <returns>
         /// An assessment on failure, null on success
         /// </returns>
-        public static StepResult Get(MethodInfo method, TestStep step, object instance, TestParameters parameters, object parameter = null)
+        public static StepResult Get(MethodInfo method, TestStep step, object instance, ITestFramework testFramework, object parameter = null)
         {
             if (method == null)
                 return null;
@@ -96,7 +99,7 @@ namespace BestTest.Test
                 }
                 else
                     method.Invoke(instance, NoParameter);
-            }, step, method, parameters);
+            }, step, method, testFramework);
         }
     }
 }

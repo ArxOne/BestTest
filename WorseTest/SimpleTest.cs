@@ -17,12 +17,14 @@ namespace WorseTest
         }
 
         [TestMethod]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.Description("Inconclusive test")]
         public void InconclusiveTest()
         {
             Assert.Inconclusive("Not sure {0}", "of it");
         }
 
         [TestMethod]
+        [Microsoft.VisualStudio.TestTools.UnitTesting.Description("Failing test")]
         public void FailingTest()
         {
             Assert.Fail(":(");
