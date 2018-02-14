@@ -173,7 +173,7 @@ namespace BestTest.Test
             if (parameters.Verbosity >= Verbosity.Detailed)
             {
                 var assemblies = testDescriptions.Select(t => t.AssemblyName).Distinct();
-                var testedAssemblies = string.Join(Environment.NewLine + "                      ", assemblies);
+                var testedAssemblies = string.Join(Environment.NewLine + "                        ", assemblies);
                 consoleWriter.WriteLine($"Tested assemblies:      {testedAssemblies}");
                 consoleWriter.WriteLine();
             }
