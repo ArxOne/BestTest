@@ -4,7 +4,7 @@
 // 1. The ProductInfo.cs used by all assemblies
 // 2. The ProductionVersion.bat used by AppVeyor build
 
-var Version = "0.11.1";
+var Version = "0.11.2";
 
 var Title = "BestTest";
 var Company = "Arx One";
