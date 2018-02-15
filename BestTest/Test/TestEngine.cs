@@ -291,9 +291,10 @@ namespace BestTest.Test
             methodName = methodName.Substring(0, Math.Min(methodName.Length, maxNameLength)).PadRight(maxNameLength);
             var literalTime = GetLiteral(testResult.Duration);
             var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
+            consoleWriter.MarkerPadding = (int)Math.Log10(testSet.Count) + 1;
             var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success);
             // >= Normal: single line
-            var outputLine = $"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(10)})";
+            var outputLine = $"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(7)})";
             // >= Detailed: stack trace on error
             if (parameters.Verbosity >= Verbosity.Detailed && testResult.ResultCode != ResultCode.Success)
                 outputLine += Environment.NewLine + testResult.TestStepResult?.Exception;

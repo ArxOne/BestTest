@@ -16,6 +16,8 @@ namespace BestTest.Test
 
         public const string IndexMarker = "¤¤¤";
 
+        public int MarkerPadding { get; set; } = 5;
+
         public ConsoleWriter(TextWriter output)
         {
             _output = output;
@@ -26,7 +28,7 @@ namespace BestTest.Test
             lock (_lock)
             {
                 if (text.Contains(IndexMarker))
-                    text = text.Replace(IndexMarker, (++_countWritten).ToString(CultureInfo.InvariantCulture).PadLeft(5));
+                    text = text.Replace(IndexMarker, (++_countWritten).ToString(CultureInfo.InvariantCulture).PadLeft(MarkerPadding));
                 _output.WriteLine(text);
             }
         }
