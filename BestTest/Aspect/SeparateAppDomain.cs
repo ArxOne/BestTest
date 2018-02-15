@@ -34,17 +34,13 @@ namespace BestTest.Aspect
             }
             finally
             {
-                var unloadThread = new Thread(delegate ()
+                try
                 {
-                    try
-                    {
-                        AppDomain.Unload(appDomain);
-                    }
-                    catch
-                    {
-                    }
-                });
-                unloadThread.Start();
+                    AppDomain.Unload(appDomain);
+                }
+                catch
+                {
+                }
             }
         }
     }

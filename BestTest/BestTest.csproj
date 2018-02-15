@@ -65,6 +65,8 @@
     <Compile Include="Reflection\AssemblyReflection.cs" />
     <Compile Include="Reflection\ConfigFileContext.cs" />
     <Compile Include="Reflection\ReflectionExtensions.cs" />
+    <Compile Include="Test\StepResults.cs" />
+    <Compile Include="Utility\ThreadUtility.cs" />
     <Compile Include="Test\ConsoleCapture.cs" />
     <Compile Include="Test\ConsoleWriter.cs" />
     <Compile Include="Test\Framework\ITestFramework.cs" />

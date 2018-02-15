@@ -29,7 +29,7 @@ namespace BestTest.Test
             /// <param name="value">The character to write to the text stream.</param>
             public override void Write(char value)
             {
-                _capture.Append(value);
+                _capture?.Append(value);
             }
         }
 

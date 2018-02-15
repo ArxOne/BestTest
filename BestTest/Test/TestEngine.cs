@@ -13,6 +13,7 @@ namespace BestTest.Test
     using System.Reflection;
     using System.Threading;
     using Framework;
+    using Utility;
 
     public class TestEngine : MarshalByRefObject
     {
@@ -152,6 +153,8 @@ namespace BestTest.Test
                     return "threads";
                 case IsolationLevel.Everything:
                     return "assemblies+threads";
+                case IsolationLevel.Tests:
+                    return "tests";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(level), level, null);
             }
@@ -258,8 +261,7 @@ namespace BestTest.Test
             testSet.PushResults(testInstances.Cleanup(parameters));
         }
 
-        private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances,
-            int maxNameLength)
+        private void InlineParallelRunner(TestSet testSet, TestParameters parameters, ConsoleWriter consoleWriter, TestInstances testInstances, int maxNameLength)
         {
             for (; ; )
             {
@@ -267,11 +269,14 @@ namespace BestTest.Test
                 if (testDescription == null)
                     break;
 
-                var t0 = DateTime.UtcNow;
-                var stepResults = Test(testDescription, testInstances, parameters).ToArray();
-                var testAssessments = new TestResult(testDescription, stepResults, DateTime.UtcNow - t0);
-                TraceResult(testSet, testAssessments, consoleWriter, parameters, maxNameLength);
-                testSet.PushResult(testAssessments);
+                TestResult testResult;
+                if (parameters.Isolation.HasFlag(IsolationLevel.Tests))
+                    testResult = SeparatedTest(testDescription, parameters);
+                else
+                    testResult = InlineTest(testDescription, testInstances, parameters);
+
+                TraceResult(testSet, testResult, consoleWriter, parameters, maxNameLength);
+                testSet.PushResult(testResult);
             }
         }
 
@@ -294,7 +299,11 @@ namespace BestTest.Test
                 outputLine += Environment.NewLine + testResult.TestStepResult?.Exception;
             // >= Diagnostic: full output
             if (parameters.Verbosity >= Verbosity.Diagnostic)
-                outputLine += Environment.NewLine + testResult.TestStepResult?.Output;
+            {
+                var output = testResult.TestStepResult?.Output;
+                if (!string.IsNullOrEmpty(output))
+                    outputLine += Environment.NewLine + output;
+            }
             consoleWriter.WriteLine(outputLine);
             return testResult;
         }
@@ -330,6 +339,24 @@ namespace BestTest.Test
             return literal;
         }
 
+        [SeparateAppDomain]
+        private TestResult SeparatedTest(TestDescription testDescription, TestParameters parameters)
+        {
+            var testInstances = new TestInstances();
+            var testResult = InlineTest(testDescription, testInstances, parameters);
+            // TODO: do not ignore the results
+            testInstances.Cleanup(parameters);
+            return testResult;
+        }
+
+        private TestResult InlineTest(TestDescription testDescription, TestInstances testInstances, TestParameters parameters)
+        {
+            var t0 = DateTime.UtcNow;
+            var stepResults = Test(testDescription, testInstances, parameters).ToArray();
+            var testResult = new TestResult(testDescription, stepResults, DateTime.UtcNow - t0);
+            return testResult;
+        }
+
         /// <summary>
         /// Runs a single test.
         /// </summary>
@@ -342,34 +369,33 @@ namespace BestTest.Test
             // initialize test
             var testInstance = testInstances.Get(testDescription, out var initializationFailureTestAssessment, parameters.Framework);
             if (initializationFailureTestAssessment != null)
-            {
-                yield return initializationFailureTestAssessment;
-                yield break;
-            }
+                return new[] { initializationFailureTestAssessment };
 
             // run it
-            StepResult[] stepResults = null;
-            string consoleOutput = null;
-            var thread = new Thread(delegate ()
-            {
-                using (var consoleCapture = new ConsoleCapture())
-                {
-                    stepResults = Test(testDescription, testInstance, parameters.Framework).ToArray();
-                    consoleOutput = consoleCapture.Capture;
-                }
-            });
-            thread.Start();
+            var stepResults = new StepResults();
+            var thread = ThreadUtility.Start(Test, testDescription, testInstance, parameters.Framework, stepResults);
             // wait for test
             if (thread.Join(parameters.Timeout)) // test ended in time
-            {
-                foreach (var stepResult in stepResults)
-                    yield return stepResult;
-                yield break;
-            }
+                return stepResults.Results;
 
             // in case it took too long, say it
             thread.Abort();
-            yield return new StepResult(TestStep.Test, ResultCode.Timeout, null, consoleOutput);
+            return new[] { new StepResult(TestStep.Test, ResultCode.Timeout, null, stepResults.Output) };
+        }
+
+        private static void Test(TestDescription testDescription, TestInstance testInstance, ITestFramework testFramework, StepResults results)
+        {
+            using (var consoleCapture = new ConsoleCapture())
+            {
+                try
+                {
+                    results.Results = Test(testDescription, testInstance, testFramework).ToArray();
+                }
+                finally // when thread is aborted
+                {
+                    results.Output = consoleCapture.Capture;
+                }
+            }
         }
 
         private static IEnumerable<StepResult> Test(TestDescription testDescription, TestInstance testInstance, ITestFramework testFramework)

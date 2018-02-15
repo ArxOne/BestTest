@@ -19,6 +19,9 @@ namespace BestTest.Test
         T = Threads,
 
         Everything = Assemblies | Threads,
-        E = Everything
+        E = Everything,
+
+        Tests = 0x04,
+        Test = Tests,
     }
 }
