@@ -12,6 +12,8 @@ namespace WorseTest
     public class SimpleTest
     {
         [TestMethod]
+        [TestProperty("Result", "Success")]
+        [TestCategory("Unit")]
         public void SucceedingTest()
         {
         }

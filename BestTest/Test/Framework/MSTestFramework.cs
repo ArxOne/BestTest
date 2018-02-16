@@ -84,5 +84,31 @@ namespace BestTest.Test.Framework
                 return null;
             return string.Join(" ", descriptions);
         }
+
+        public IEnumerable<string> GetCategories(MethodInfo methodInfo)
+        {
+            var categoryAttributes = methodInfo.GetAnyAttribute("TestCategoryAttribute");
+            foreach (var categoryAttribute in categoryAttributes)
+            {
+                if (categoryAttribute.GetMemberValue("TestCategories") is IEnumerable<string> categories)
+                {
+                    foreach (var category in categories)
+                        yield return category;
+                }
+            }
+        }
+
+        public IEnumerable<KeyValuePair<string, string>> GetProperties(MethodInfo methodInfo)
+        {
+            var propertyAttributes = methodInfo.GetAnyAttribute("TestPropertyAttribute");
+            foreach (var propertyAttribute in propertyAttributes)
+            {
+                if (propertyAttribute.GetMemberValue("Name") is string name)
+                {
+                    var value = propertyAttribute.GetMemberValue("Value") as string;
+                    yield return new KeyValuePair<string, string>(name, value);
+                }
+            }
+        }
     }
 }

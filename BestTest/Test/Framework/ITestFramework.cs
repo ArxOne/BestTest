@@ -89,5 +89,19 @@ namespace BestTest.Test.Framework
         /// <param name="methodInfo">The method information.</param>
         /// <returns></returns>
         string GetDescription(MethodInfo methodInfo);
+
+        /// <summary>
+        /// Gets the categories.
+        /// </summary>
+        /// <param name="methodInfo">The method information.</param>
+        /// <returns></returns>
+        IEnumerable<string> GetCategories(MethodInfo methodInfo);
+
+        /// <summary>
+        /// Gets the properties.
+        /// </summary>
+        /// <param name="methodInfo">The method information.</param>
+        /// <returns></returns>
+        IEnumerable<KeyValuePair<string,string>> GetProperties(MethodInfo methodInfo);
     }
 }

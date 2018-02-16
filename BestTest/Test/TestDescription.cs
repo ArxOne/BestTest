@@ -6,6 +6,7 @@ namespace BestTest.Test
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using Aspect;
     using Framework;
