@@ -6,6 +6,7 @@ namespace WorseTest
 {
     using System;
     using System.ComponentModel;
+    using System.Threading;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -43,6 +44,12 @@ namespace WorseTest
         public void UnexpectedExceptionTest()
         {
             throw new ArgumentException();
+        }
+
+        [TestMethod]
+        public void TimeoutTest()
+        {
+            Thread.Sleep(TimeSpan.FromHours(1));
         }
     }
 }
