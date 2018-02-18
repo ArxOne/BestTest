@@ -7,6 +7,7 @@ namespace BestTest.Aspect
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Runtime.Remoting.Lifetime;
     using System.Threading;
     using ArxOne.MrAdvice.Advice;
 

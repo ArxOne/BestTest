@@ -7,8 +7,9 @@ namespace BestTest.Test
     using System;
     using System.Globalization;
     using System.IO;
+    using Utility;
 
-    public class ConsoleWriter : MarshalByRefObject
+    public class ConsoleWriter : CrossAppDomainObject
     {
         private readonly TextWriter _output;
         private readonly object _lock = new object();

@@ -7,12 +7,13 @@ namespace BestTest.Test
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Utility;
 
     /// <summary>
     /// Represents a set of tests
     /// </summary>
     /// <seealso cref="System.MarshalByRefObject" />
-    public class TestSet : MarshalByRefObject
+    public class TestSet : CrossAppDomainObject
     {
         [Obsolete("Serialization-only ctor")]
         public TestSet() { }

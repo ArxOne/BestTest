@@ -15,7 +15,7 @@ namespace BestTest.Test
     using Framework;
     using Utility;
 
-    public class TestEngine : MarshalByRefObject
+    public class TestEngine : CrossAppDomainObject
     {
         public int Run(TestParameters testParameters)
         {
