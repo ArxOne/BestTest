@@ -35,13 +35,20 @@ namespace BestTest.Aspect
             }
             finally
             {
-                try
+                void UnloadAppDomain()
                 {
-                    AppDomain.Unload(appDomain);
+                    try
+                    {
+                        AppDomain.Unload(appDomain);
+                    }
+                    catch
+                    {
+                    }
                 }
-                catch
-                {
-                }
+
+                UnloadAppDomain();
+                //var unloadThread = new Thread(UnloadAppDomain);
+                //unloadThread.Start();
             }
         }
     }
