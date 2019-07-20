@@ -74,5 +74,13 @@ namespace BestTest.Test
         ///   <c>true</c> if [display description]; otherwise, <c>false</c>.
         /// </value>
         public bool DisplayDescription { get; set; }
+
+        /// <summary>
+        /// Gets or sets the console mode.
+        /// </summary>
+        /// <value>
+        /// The console mode.
+        /// </value>
+        public ConsoleMode ConsoleMode { get; set; } = ConsoleMode.None;
     }
 }

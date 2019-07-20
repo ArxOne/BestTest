@@ -106,7 +106,7 @@ namespace BestTest.Test
         private int RunTests(TestParameters parameters)
         {
             var t0 = DateTime.UtcNow;
-            var consoleWriter = new ConsoleWriter(Console.Out);
+            var consoleWriter = new ConsoleWriter(Console.Out, parameters.ConsoleMode);
 
             if (parameters.Verbosity >= Verbosity.Detailed)
             {
@@ -167,7 +167,7 @@ namespace BestTest.Test
         /// <returns></returns>
         public TestResult[] Test(TestParameters parameters)
         {
-            return Test(parameters, new ConsoleWriter(Console.Out));
+            return Test(parameters, new ConsoleWriter(Console.Out, parameters.ConsoleMode));
         }
 
         public TestResult[] Test(TestParameters parameters, ConsoleWriter consoleWriter)
@@ -185,7 +185,7 @@ namespace BestTest.Test
 
         public TestResult[] Test(TestDescription[] testDescriptions, TestParameters parameters)
         {
-            return Test(testDescriptions, parameters, new ConsoleWriter(Console.Out));
+            return Test(testDescriptions, parameters, new ConsoleWriter(Console.Out, parameters.ConsoleMode));
         }
 
         public TestResult[] Test(TestDescription[] testDescriptions, TestParameters parameters, ConsoleWriter consoleWriter)
@@ -292,7 +292,7 @@ namespace BestTest.Test
             var literalTime = GetLiteral(testResult.Duration);
             var totalTests = testSet.Count.ToString(CultureInfo.InvariantCulture);
             consoleWriter.MarkerPadding = (int)Math.Log10(testSet.Count) + 1;
-            var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success);
+            var resultCode = GetLiteral(testStepResult?.ResultCode ?? ResultCode.Success, consoleWriter);
             // >= Normal: single line
             var outputLine = $"[{ConsoleWriter.IndexMarker}/{totalTests}] {methodName}: {resultCode.PadRight(12)} ({literalTime.PadLeft(7)})";
             // >= Detailed: stack trace on error
@@ -309,18 +309,18 @@ namespace BestTest.Test
             return testResult;
         }
 
-        private static string GetLiteral(ResultCode resultCode)
+        private static string GetLiteral(ResultCode resultCode, ConsoleWriter consoleWriter)
         {
             switch (resultCode)
             {
                 case ResultCode.Success:
-                    return "OK";
+                    return consoleWriter.Success + "OK" + consoleWriter.Normal;
                 case ResultCode.Inconclusive:
-                    return "Inconclusive";
+                    return consoleWriter.Warning + "Inconclusive" + consoleWriter.Normal;
                 case ResultCode.Failure:
-                    return "Failed";
+                    return consoleWriter.Error + "Failed" + consoleWriter.Normal;
                 case ResultCode.Timeout:
-                    return "Timed out";
+                    return consoleWriter.Error + "Timed out" + consoleWriter.Normal;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(resultCode), resultCode, null);
             }

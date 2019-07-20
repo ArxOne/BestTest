@@ -35,7 +35,13 @@ M[inimal]:    assessment is displayed
 N[ormal]:     show tests list and result (default)
 D[etailed]:   show stack trace on failed test
 Diag[nostic]: show all tests output",
-                    (Verbosity v )=> testParameters.Verbosity = v
+                    (Verbosity v ) => testParameters.Verbosity = v
+                },
+                {
+                    "c|color:",@"Sets color mode:
+N[one]: no color (default)
+A[ansi]: ANSI colors",
+                    (ConsoleMode m) => testParameters.ConsoleMode = m
                 },
                 {"I|isolation:", @"Sets isolation level:
 N[one]: no isolation, all threads and assemblies share the same space

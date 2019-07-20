@@ -19,9 +19,30 @@ namespace BestTest.Test
 
         public int MarkerPadding { get; set; } = 5;
 
-        public ConsoleWriter(TextWriter output)
+        public string Success { get; }
+        public string Warning { get; }
+        public string Error { get; }
+        public string Normal { get; }
+
+        public ConsoleWriter(TextWriter output, ConsoleMode mode)
         {
             _output = output;
+            switch (mode)
+            {
+                case ConsoleMode.Ansi:
+                    var csi = "\x1B[";
+                    Success = csi + "32m";
+                    Warning = csi + "33m";
+                    Error = csi + "31m";
+                    Normal = csi + "0m";
+                    break;
+                default:
+                    Success = "";
+                    Warning = "";
+                    Error = "";
+                    Normal = "";
+                    break;
+            }
         }
 
         public void WriteLine(string text = "")
